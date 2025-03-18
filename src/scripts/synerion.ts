@@ -9,10 +9,13 @@ import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
 import formAutomationError from '../errors/FormAutomationError';
 import fillInput from '../util/fillInput';
+import { getDayFromDayType } from '../util/deconstructors';
+import { AttendixDayHours } from '../types/attendix';
 // const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
+const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
 let username = process.env.ATTENTIX_USERNAME || '';
 let password = process.env.ATTENTIX_PASSWORD || '';
 export const run = async () => {
@@ -38,8 +41,8 @@ export const run = async () => {
 
   await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
   page.off('response', eventHandler);
-  await fillOutLoginDetailsAndLogin(page);
-  await saveAttentixHoursAndModifyRequest(page, hoursWithDay);
+  await handleLoginAttendix(page);
+  await fillOutAttendixHoursAndSubmit(page, hoursWithDay);
 
   await browser.close();
 };
@@ -70,13 +73,13 @@ function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] 
   });
 }
 
-async function fillOutLoginDetailsAndLogin(page: Page) {
+async function handleLoginAttendix(page: Page) {
   const inputs: Parameters<typeof fillInput>[0][] = [
     { inputSelector: 'email', inputValue: username, errorMsg: 'couldnt find attentix email input' },
     { inputSelector: 'password', inputValue: password, errorMsg: 'couldnt find attentix password input' },
   ].map(p => ({ ...p, page }));
 
-  Promise.all(inputs)
+  Promise.all(inputs);
 
   const submitButton = await page.$('#image1');
 
@@ -91,13 +94,13 @@ async function fillOutLoginDetailsAndLogin(page: Page) {
   return;
 }
 
-async function saveAttentixHoursAndModifyRequest(page: Page, days: Day[]) {
+async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
   const button = await page.$('#save_btn');
 
   console.log(days);
 
   if (!button) {
-    throw new Error('couldnt find save button');
+    formAutomationError('couldnt find save button');
   }
 
   await page.setRequestInterception(true);
@@ -130,4 +133,22 @@ async function saveAttentixHoursAndModifyRequest(page: Page, days: Day[]) {
   await button.click();
 
   await page.waitForNetworkIdle({ idleTime: 1000 });
+}
+
+function getTrannySelector(day: Day): string {
+  return `#${ATTENDIX_DAYS_TABLE_ID} tr[row_no=${getDayFromDayType(day)}]`;
+}
+
+function getHoursSelectors(day: Day): AttendixDayHours {
+  const dayNumber = getDayFromDayType(day);
+  return {
+    start: {
+      hour: `time_start_HH_${dayNumber}`,
+      minute: `time_start_MM_${dayNumber}`,
+    },
+    end: {
+      hour: `time_end_HH_${dayNumber}`,
+      minute: `time_end_MM_${dayNumber}`,
+    },
+  };
 }
