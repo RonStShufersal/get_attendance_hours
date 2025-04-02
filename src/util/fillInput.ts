@@ -12,7 +12,7 @@ export default async function fillInput({
   inputValue: string;
   errorMsg?: string;
 }) {
-  const input = await page.$(`input[name="${inputSelector}"]`);
+  const input = await page.$(`input[name=${inputSelector}]`);
   if (input === null) {
     formAutomationError(errorMsg || 'couldnt find input');
   }

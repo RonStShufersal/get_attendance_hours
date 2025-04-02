@@ -1,23 +1,23 @@
-// import path from 'path';
 import { HTTPResponse, Page } from 'puppeteer';
 import { connect } from '../connect';
-// import scrapeError from '../errors/ScrapingError';
 import { Day, Hour } from '../types/hours';
 import { SynerionResponse } from '../types/synerion';
-import { writeFile } from 'node:fs/promises';
 import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
 import formAutomationError from '../errors/FormAutomationError';
 import fillInput from '../util/fillInput';
-import { getDayFromDayType } from '../util/deconstructors';
+import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../util/deconstructors';
 import { AttendixDayHours } from '../types/attendix';
-// const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
+import { log } from 'console';
+
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
 const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
+
 let username = process.env.ATTENTIX_USERNAME || '';
 let password = process.env.ATTENTIX_PASSWORD || '';
+
 export const run = async () => {
   username = process.env.ATTENTIX_USERNAME || '';
   password = process.env.ATTENTIX_PASSWORD || '';
@@ -44,7 +44,7 @@ export const run = async () => {
   await handleLoginAttendix(page);
   await fillOutAttendixHoursAndSubmit(page, hoursWithDay);
 
-  await browser.close();
+  // await browser.close();
 };
 
 function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] {
@@ -52,7 +52,7 @@ function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] 
     res =>
       res.Date &&
       new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) &&
-      res.InOuts[0].In?.Time &&
+      res.InOuts[0]?.In.Time &&
       res.InOuts[0]?.Out.Time,
   ).map(res => {
     const { Date: day } = res;
@@ -74,12 +74,18 @@ function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] 
 }
 
 async function handleLoginAttendix(page: Page) {
-  const inputs: Parameters<typeof fillInput>[0][] = [
+  if (!username || !password) {
+    throw new Error('cant login without credentials');
+  }
+
+  const inputs = [
     { inputSelector: 'email', inputValue: username, errorMsg: 'couldnt find attentix email input' },
     { inputSelector: 'password', inputValue: password, errorMsg: 'couldnt find attentix password input' },
-  ].map(p => ({ ...p, page }));
+  ];
 
-  Promise.all(inputs);
+  for (const input of inputs) {
+    await fillInput({ ...input, page });
+  }
 
   const submitButton = await page.$('#image1');
 
@@ -90,49 +96,81 @@ async function handleLoginAttendix(page: Page) {
   await submitButton.click();
 
   await page.waitForNavigation({ waitUntil: 'networkidle2' });
-
-  return;
 }
 
 async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
-  const button = await page.$('#save_btn');
-
   console.log(days);
+  
+  const button = await page.$('#save_btn');
 
   if (!button) {
     formAutomationError('couldnt find save button');
   }
 
-  await page.setRequestInterception(true);
+  await chooseAttentixAssignment(page);
 
-  page.on('request', async interceptedRequest => {
-    if (interceptedRequest.isInterceptResolutionHandled()) return;
+  for (const day of days) {
+    const tr = await page.$(getTrannySelector(day));
 
-    const allData = interceptedRequest.postData();
-    if (allData) {
-      await writeFile('./attendix_formData_payload.txt', allData);
-      const formDataObject = allData.split('&').reduce((p, c) => {
-        const [key, value] = c.split('=');
-        p[key] = value;
-        return p;
-      }, {} as Record<string, string>);
-
-      await writeFile('./attendix_payload.json', JSON.stringify(formDataObject, null, 2));
-
-      interceptedRequest.continue();
-
-      // for (const key in formDataObject) {
-
-      //   if (Object.prototype.hasOwnProperty.call(formDataObject, key)) {
-      //     const element = formDataObject[key];
-      //   }
-      // }
+    if (!tr) {
+      formAutomationError(`couldnt find tr for day ${day.dayValue}`);
     }
-  });
 
-  await button.click();
+    // fill mission
+    await fillMissionInput(page, day);
 
-  await page.waitForNetworkIdle({ idleTime: 1000 });
+    await handleFillHourInputsStartAndEnd(page, day);
+  }
+
+  // await button.click();
+
+  // await page.waitForNetworkIdle({ idleTime: 1000 });
+}
+
+async function chooseAttentixAssignment(page: Page) {
+  const RELEVANT_OPTION_VALUE = `2791`;
+  const selectElement = await page.$('#assignments');
+
+  if (!selectElement) {
+    formAutomationError('couldnt find select element');
+  }
+
+  await selectElement.select(RELEVANT_OPTION_VALUE);
+}
+
+async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
+  const { start, end } = getHoursSelectors(day);
+  const getSelector = (selector: string) => getTrannySelector(day) + selector;
+
+  //@ts-ignore
+  const hourIn = String(getHourFromHours(day.hours.in));
+  //@ts-ignore
+  const minuteIn = String(getMinutesFromHours(day.hours.in));
+
+  //@ts-ignore
+  const hourOut = String(getHourFromHours(day.hours.out));
+  //@ts-ignore
+  const minuteOut = String(getMinutesFromHours(day.hours.out));
+
+  //@ts-ignore
+  await fillInput({ page, inputSelector: getSelector(start.hour), inputValue: hourIn });
+  //@ts-ignore
+  await fillInput({ page, inputSelector: getSelector(start.minute), inputValue: minuteIn });
+
+  //@ts-ignore
+  await fillInput({ page, inputSelector: getSelector(end.hour), inputValue: hourOut });
+  //@ts-ignore
+  await fillInput({ page, inputSelector: getSelector(end.minute), inputValue: minuteOut });
+}
+
+async function fillMissionInput(page: Page, day: Day) {
+  const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name] ');
+
+  if (!missionInput) {
+    formAutomationError('couldnt find mission input');
+  }
+
+  await missionInput.click();
 }
 
 function getTrannySelector(day: Day): string {
@@ -141,13 +179,20 @@ function getTrannySelector(day: Day): string {
 
 function getHoursSelectors(day: Day): AttendixDayHours {
   const dayNumber = getDayFromDayType(day);
+  //@ts-ignore
   return {
+    //@ts-ignore
     start: {
+      //@ts-ignore
       hour: `time_start_HH_${dayNumber}`,
+      //@ts-ignore
       minute: `time_start_MM_${dayNumber}`,
     },
+    //@ts-ignore
     end: {
+      //@ts-ignore
       hour: `time_end_HH_${dayNumber}`,
+      //@ts-ignore
       minute: `time_end_MM_${dayNumber}`,
     },
   };

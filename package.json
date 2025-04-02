@@ -10,7 +10,6 @@
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "yarn@1.22.22",
   "scripts": {
     "start": "tsdx watch",
     "serve": "node dist",
@@ -20,11 +19,6 @@
     "prepare": "tsdx build",
     "size": "size-limit",
     "analyze": "size-limit --why"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "tsdx lint"
-    }
   },
   "name": "puppet",
   "author": "Tim Hostetler",
