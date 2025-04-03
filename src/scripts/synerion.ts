@@ -1,13 +1,18 @@
 import { HTTPResponse, Page } from 'puppeteer';
 import { connect } from '../connect';
-import { Day, Hour } from '../types/hours';
+import { Day, DayValue, Hour } from '../types/hours';
 import { SynerionResponse } from '../types/synerion';
 import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
 import formAutomationError from '../errors/FormAutomationError';
 import fillInput from '../util/fillInput';
-import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../util/deconstructors';
+import {
+	getDayFromDayType,
+	getHourFromHours,
+	getMinutesFromHours,
+} from '../util/deconstructors';
 import { AttendixDayHours } from '../types/attendix';
+import { dateFormat } from '../util/dateFormat';
 
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
@@ -46,10 +51,15 @@ export const run = async () => {
 	// await browser.close();
 };
 
-function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] {
+function getDaysAndHoursFromSynerionResponse(
+	response: SynerionResponse,
+): Day[] {
 	return response.DailyBrowserDtos.filter(
 		(res) =>
-			res.Date && new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) && res.InOuts[0]?.In.Time && res.InOuts[0]?.Out.Time,
+			res.Date &&
+			new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) &&
+			res.InOuts[0]?.In.Time &&
+			res.InOuts[0]?.Out.Time,
 	).map((res) => {
 		const { Date: day } = res;
 		const { In, Out } = res.InOuts[0];
@@ -60,7 +70,7 @@ function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] 
 		const inTime: Hour = In.Time;
 		const outTime: Hour = Out.Time;
 		return {
-			dayValue: day as Day['dayValue'],
+			dayValue: `${dateFormat(new Date(day))}` as DayValue,
 			hours: {
 				in: inTime,
 				out: outTime,
@@ -75,8 +85,16 @@ async function handleLoginAttendix(page: Page) {
 	}
 
 	const inputs = [
-		{ inputSelector: 'email', inputValue: username, errorMsg: 'couldnt find attentix email input' },
-		{ inputSelector: 'password', inputValue: password, errorMsg: 'couldnt find attentix password input' },
+		{
+			inputSelector: 'email',
+			inputValue: username,
+			errorMsg: 'couldnt find attentix email input',
+		},
+		{
+			inputSelector: 'password',
+			inputValue: password,
+			errorMsg: 'couldnt find attentix password input',
+		},
 	];
 
 	for (const input of inputs) {
@@ -144,15 +162,33 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 	const hourOut = String(getHourFromHours(day.hours.out));
 	const minuteOut = String(getMinutesFromHours(day.hours.out));
 
-	await fillInput({ page, inputSelector: getSelector(start.hour), inputValue: hourIn });
-	await fillInput({ page, inputSelector: getSelector(start.minute), inputValue: minuteIn });
+	await fillInput({
+		page,
+		inputSelector: getSelector(start.hour),
+		inputValue: hourIn,
+	});
+	await fillInput({
+		page,
+		inputSelector: getSelector(start.minute),
+		inputValue: minuteIn,
+	});
 
-	await fillInput({ page, inputSelector: getSelector(end.hour), inputValue: hourOut });
-	await fillInput({ page, inputSelector: getSelector(end.minute), inputValue: minuteOut });
+	await fillInput({
+		page,
+		inputSelector: getSelector(end.hour),
+		inputValue: hourOut,
+	});
+	await fillInput({
+		page,
+		inputSelector: getSelector(end.minute),
+		inputValue: minuteOut,
+	});
 }
 
 async function fillMissionInput(page: Page, day: Day) {
-	const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name] ');
+	const missionInput = await page.$(
+		getTrannySelector(day) + ' input[fieldname="assignment_name] ',
+	);
 
 	if (!missionInput) {
 		formAutomationError('couldnt find mission input');
