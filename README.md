@@ -1,21 +1,22 @@
-# Boilerplate Puppeteer, Node.js, and Typescript starter.
+# Shufersal attendance scraper and automator.
 
 ## Installation
-Docker is needed for browserless container.  [Get Docker](https://docs.docker.com/get-docker/)
 ```
-git clone git@github.com:thostetler/puppet.git
-cd puppet
-yarn install
+git clone git@github.com:RonStShufersal/get_attendance_hours.git
+cd get_attendance_hours
+npm i
 ```
 
 ## Get started
 
-Start browserless server
+You must create a `.env` file in the root of the project, to be able to automate the logins.
+
+Start browser and scrape
 ```
-yarn serve
+npm run serve
 ```
 
 run scripts
 ```
-yarn start
+npm start
 ```

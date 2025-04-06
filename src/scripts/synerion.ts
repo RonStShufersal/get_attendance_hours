@@ -1,199 +1,216 @@
 import { HTTPResponse, Page } from 'puppeteer';
 import { connect } from '../connect';
-import { Day, Hour } from '../types/hours';
+import { Day, DayValue, Hour } from '../types/hours';
 import { SynerionResponse } from '../types/synerion';
 import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
 import formAutomationError from '../errors/FormAutomationError';
 import fillInput from '../util/fillInput';
-import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../util/deconstructors';
+import {
+	getDayFromDayType,
+	getHourFromHours,
+	getMinutesFromHours,
+} from '../util/deconstructors';
 import { AttendixDayHours } from '../types/attendix';
-import { log } from 'console';
+import { dateFormat } from '../util/dateFormat';
 
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
 const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
 
-let username = process.env.ATTENTIX_USERNAME || '';
-let password = process.env.ATTENTIX_PASSWORD || '';
+let username = '';
+let password = '';
 
 export const run = async () => {
-  username = process.env.ATTENTIX_USERNAME || '';
-  password = process.env.ATTENTIX_PASSWORD || '';
+	username = process.env.ATTENTIX_USERNAME || '';
+	password = process.env.ATTENTIX_PASSWORD || '';
 
-  if (!username || !password) {
-    throw new Error('please provide both a username and a password');
-  }
-  const browser = await connect();
-  const page = await browser.newPage();
-  let hoursWithDay = [] as Day[];
-  const eventHandler = async (response: HTTPResponse) => {
-    if (response.url() !== externalNetworkRequestURL || !response.ok) {
-      return;
-    }
-    const body = await response.json();
-    hoursWithDay = getDaysAndHoursFromSynerionResponse(body);
-  };
-  page.on('response', eventHandler);
-  await page.setViewport({ width: 1280, height: 1800 });
-  await page.goto(URL, { waitUntil: 'networkidle2' });
+	if (!username || !password) {
+		throw new Error('please provide both a username and a password');
+	}
+	const browser = await connect();
+	const page = await browser.newPage();
+	let hoursWithDay = [] as Day[];
+	const eventHandler = async (response: HTTPResponse) => {
+		if (response.url() !== externalNetworkRequestURL || !response.ok) {
+			return;
+		}
+		const body = await response.json();
+		hoursWithDay = getDaysAndHoursFromSynerionResponse(body);
+	};
+	page.on('response', eventHandler);
+	await page.setViewport({ width: 1280, height: 1800 });
+	await page.goto(URL, { waitUntil: 'networkidle2' });
 
-  await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
-  page.off('response', eventHandler);
-  await handleLoginAttendix(page);
-  await fillOutAttendixHoursAndSubmit(page, hoursWithDay);
+	await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
+	page.off('response', eventHandler);
+	await handleLoginAttendix(page);
+	await fillOutAttendixHoursAndSubmit(page, hoursWithDay);
 
-  // await browser.close();
+	// await browser.close();
 };
 
-function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] {
-  return response.DailyBrowserDtos.filter(
-    res =>
-      res.Date &&
-      new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) &&
-      res.InOuts[0]?.In.Time &&
-      res.InOuts[0]?.Out.Time,
-  ).map(res => {
-    const { Date: day } = res;
-    const { In, Out } = res.InOuts[0];
+function getDaysAndHoursFromSynerionResponse(
+	response: SynerionResponse,
+): Day[] {
+	return response.DailyBrowserDtos.filter(
+		(res) =>
+			res.Date &&
+			new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) &&
+			res.InOuts[0]?.In.Time &&
+			res.InOuts[0]?.Out.Time,
+	).map((res) => {
+		const { Date: day } = res;
+		const { In, Out } = res.InOuts[0];
 
-    if (!stringIsHourBase(In.Time) || !stringIsHourBase(Out.Time)) {
-      scrapeError(`${In.Time}, ${Out.Time}`);
-    }
-    const inTime: Hour = In.Time;
-    const outTime: Hour = Out.Time;
-    return {
-      dayValue: day as Day['dayValue'],
-      hours: {
-        in: inTime,
-        out: outTime,
-      },
-    };
-  });
+		if (!stringIsHourBase(In.Time) || !stringIsHourBase(Out.Time)) {
+			scrapeError(`${In.Time}, ${Out.Time}`);
+		}
+		const inTime: Hour = In.Time;
+		const outTime: Hour = Out.Time;
+		return {
+			dayValue: `${dateFormat(new Date(day))}` as DayValue,
+			hours: {
+				in: inTime,
+				out: outTime,
+			},
+		};
+	});
 }
 
 async function handleLoginAttendix(page: Page) {
-  if (!username || !password) {
-    throw new Error('cant login without credentials');
-  }
+	if (!username || !password) {
+		throw new Error('cant login without credentials');
+	}
 
-  const inputs = [
-    { inputSelector: 'email', inputValue: username, errorMsg: 'couldnt find attentix email input' },
-    { inputSelector: 'password', inputValue: password, errorMsg: 'couldnt find attentix password input' },
-  ];
+	const inputs = [
+		{
+			inputSelector: 'email',
+			inputValue: username,
+			errorMsg: 'couldnt find attentix email input',
+		},
+		{
+			inputSelector: 'password',
+			inputValue: password,
+			errorMsg: 'couldnt find attentix password input',
+		},
+	];
 
-  for (const input of inputs) {
-    await fillInput({ ...input, page });
-  }
+	for (const input of inputs) {
+		await fillInput({ ...input, page });
+	}
 
-  const submitButton = await page.$('#image1');
+	const submitButton = await page.$('#image1');
 
-  if (submitButton === null) {
-    formAutomationError('couldnt find submit button');
-  }
+	if (submitButton === null) {
+		formAutomationError('couldnt find submit button');
+	}
 
-  await submitButton.click();
+	await submitButton.click();
 
-  await page.waitForNavigation({ waitUntil: 'networkidle2' });
+	await page.waitForNavigation({ waitUntil: 'networkidle2' });
 }
 
 async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
-  console.log(days);
-  
-  const button = await page.$('#save_btn');
+	console.log(days);
 
-  if (!button) {
-    formAutomationError('couldnt find save button');
-  }
+	const button = await page.$('#save_btn');
 
-  await chooseAttentixAssignment(page);
+	if (!button) {
+		formAutomationError('couldnt find save button');
+	}
 
-  for (const day of days) {
-    const tr = await page.$(getTrannySelector(day));
+	await chooseAttentixAssignment(page);
 
-    if (!tr) {
-      formAutomationError(`couldnt find tr for day ${day.dayValue}`);
-    }
+	for (const day of days) {
+		const tr = await page.$(getTrannySelector(day));
 
-    // fill mission
-    await fillMissionInput(page, day);
+		if (!tr) {
+			formAutomationError(`couldnt find tr for day ${day.dayValue}`);
+		}
 
-    await handleFillHourInputsStartAndEnd(page, day);
-  }
+		// fill mission
+		await fillMissionInput(page, day);
 
-  // await button.click();
+		await handleFillHourInputsStartAndEnd(page, day);
+	}
 
-  // await page.waitForNetworkIdle({ idleTime: 1000 });
+	// await button.click();
+
+	// await page.waitForNetworkIdle({ idleTime: 1000 });
 }
 
 async function chooseAttentixAssignment(page: Page) {
-  const RELEVANT_OPTION_VALUE = `2791`;
-  const selectElement = await page.$('#assignments');
+	const RELEVANT_OPTION_VALUE = `2791`;
+	const selectElement = await page.$('#assignments');
 
-  if (!selectElement) {
-    formAutomationError('couldnt find select element');
-  }
+	if (!selectElement) {
+		formAutomationError('couldnt find select element');
+	}
 
-  await selectElement.select(RELEVANT_OPTION_VALUE);
+	await selectElement.select(RELEVANT_OPTION_VALUE);
 }
 
 async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
-  const { start, end } = getHoursSelectors(day);
-  const getSelector = (selector: string) => getTrannySelector(day) + selector;
+	const { start, end } = getHoursSelectors(day);
+	const getSelector = (selector: string) => getTrannySelector(day) + selector;
 
-  //@ts-ignore
-  const hourIn = String(getHourFromHours(day.hours.in));
-  //@ts-ignore
-  const minuteIn = String(getMinutesFromHours(day.hours.in));
+	const hourIn = String(getHourFromHours(day.hours.in));
+	const minuteIn = String(getMinutesFromHours(day.hours.in));
 
-  //@ts-ignore
-  const hourOut = String(getHourFromHours(day.hours.out));
-  //@ts-ignore
-  const minuteOut = String(getMinutesFromHours(day.hours.out));
+	const hourOut = String(getHourFromHours(day.hours.out));
+	const minuteOut = String(getMinutesFromHours(day.hours.out));
 
-  //@ts-ignore
-  await fillInput({ page, inputSelector: getSelector(start.hour), inputValue: hourIn });
-  //@ts-ignore
-  await fillInput({ page, inputSelector: getSelector(start.minute), inputValue: minuteIn });
+	await fillInput({
+		page,
+		inputSelector: getSelector(start.hour),
+		inputValue: hourIn,
+	});
+	await fillInput({
+		page,
+		inputSelector: getSelector(start.minute),
+		inputValue: minuteIn,
+	});
 
-  //@ts-ignore
-  await fillInput({ page, inputSelector: getSelector(end.hour), inputValue: hourOut });
-  //@ts-ignore
-  await fillInput({ page, inputSelector: getSelector(end.minute), inputValue: minuteOut });
+	await fillInput({
+		page,
+		inputSelector: getSelector(end.hour),
+		inputValue: hourOut,
+	});
+	await fillInput({
+		page,
+		inputSelector: getSelector(end.minute),
+		inputValue: minuteOut,
+	});
 }
 
 async function fillMissionInput(page: Page, day: Day) {
-  const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name] ');
+	const missionInput = await page.$(
+		getTrannySelector(day) + ' input[fieldname="assignment_name] ',
+	);
 
-  if (!missionInput) {
-    formAutomationError('couldnt find mission input');
-  }
+	if (!missionInput) {
+		formAutomationError('couldnt find mission input');
+	}
 
-  await missionInput.click();
+	await missionInput.click();
 }
 
 function getTrannySelector(day: Day): string {
-  return `#${ATTENDIX_DAYS_TABLE_ID} tr[row_no=${getDayFromDayType(day)}]`;
+	return `#${ATTENDIX_DAYS_TABLE_ID} tr[row_no=${getDayFromDayType(day)}]`;
 }
 
 function getHoursSelectors(day: Day): AttendixDayHours {
-  const dayNumber = getDayFromDayType(day);
-  //@ts-ignore
-  return {
-    //@ts-ignore
-    start: {
-      //@ts-ignore
-      hour: `time_start_HH_${dayNumber}`,
-      //@ts-ignore
-      minute: `time_start_MM_${dayNumber}`,
-    },
-    //@ts-ignore
-    end: {
-      //@ts-ignore
-      hour: `time_end_HH_${dayNumber}`,
-      //@ts-ignore
-      minute: `time_end_MM_${dayNumber}`,
-    },
-  };
+	const dayNumber = getDayFromDayType(day);
+	return {
+		start: {
+			hour: `time_start_HH_${dayNumber}`,
+			minute: `time_start_MM_${dayNumber}`,
+		},
+		end: {
+			hour: `time_end_HH_${dayNumber}`,
+			minute: `time_end_MM_${dayNumber}`,
+		},
+	};
 }

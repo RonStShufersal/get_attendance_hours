@@ -1,8 +1,13 @@
-// import { run as googleRun } from './scripts/google';
 import { run as synerionRun } from './scripts/synerion';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 
-dotenv.configDotenv()
+dotenv.configDotenv();
 
-// googleRun();
-synerionRun();
+switch (process.env.SCRIPT) {
+  case 'synerion':
+    synerionRun();
+    break;
+  default:
+    console.error('No script specified or script not recognized.');
+    process.exit(1);
+}
