@@ -1,6 +1,6 @@
 import { HTTPResponse, Page } from 'puppeteer';
 import { connect } from '../connect';
-import { Day, DayValue, Hour } from '../types/hours';
+import { Day, Hour } from '../types/hours';
 import { SynerionResponse } from '../types/synerion';
 import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
@@ -70,7 +70,7 @@ function getDaysAndHoursFromSynerionResponse(
 		const inTime: Hour = In.Time;
 		const outTime: Hour = Out.Time;
 		return {
-			dayValue: `${dateFormat(new Date(day))}` as DayValue,
+			dayValue: dateFormat(new Date(day)),
 			hours: {
 				in: inTime,
 				out: outTime,
@@ -124,10 +124,15 @@ async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
 	await chooseAttentixAssignment(page);
 
 	for (const day of days) {
-		const tr = await page.$(getTrannySelector(day));
-
-		if (!tr) {
-			formAutomationError(`couldnt find tr for day ${day.dayValue}`);
+		try {
+			const tr = await page.$(getTrannySelector(day));
+			if (!tr) {
+				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
+			}
+		} catch (error) {
+			console.log('ending early:');
+			console.error(error);
+			process.exit(1);
 		}
 
 		// fill mission
@@ -154,7 +159,6 @@ async function chooseAttentixAssignment(page: Page) {
 
 async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 	const { start, end } = getHoursSelectors(day);
-	const getSelector = (selector: string) => getTrannySelector(day) + selector;
 
 	const hourIn = String(getHourFromHours(day.hours.in));
 	const minuteIn = String(getMinutesFromHours(day.hours.in));
@@ -164,30 +168,30 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 
 	await fillInput({
 		page,
-		inputSelector: getSelector(start.hour),
+		inputSelector: start.hour,
 		inputValue: hourIn,
 	});
 	await fillInput({
 		page,
-		inputSelector: getSelector(start.minute),
+		inputSelector: start.minute,
 		inputValue: minuteIn,
 	});
 
 	await fillInput({
 		page,
-		inputSelector: getSelector(end.hour),
+		inputSelector: end.hour,
 		inputValue: hourOut,
 	});
 	await fillInput({
 		page,
-		inputSelector: getSelector(end.minute),
+		inputSelector: end.minute,
 		inputValue: minuteOut,
 	});
 }
 
 async function fillMissionInput(page: Page, day: Day) {
 	const missionInput = await page.$(
-		getTrannySelector(day) + ' input[fieldname="assignment_name] ',
+		getTrannySelector(day) + ' input[fieldname="assignment_name"] ',
 	);
 
 	if (!missionInput) {
@@ -198,7 +202,7 @@ async function fillMissionInput(page: Page, day: Day) {
 }
 
 function getTrannySelector(day: Day): string {
-	return `#${ATTENDIX_DAYS_TABLE_ID} tr[row_no=${getDayFromDayType(day)}]`;
+	return `[id=${ATTENDIX_DAYS_TABLE_ID}] tr[row_no="${getDayFromDayType(day)}"]`;
 }
 
 function getHoursSelectors(day: Day): AttendixDayHours {
