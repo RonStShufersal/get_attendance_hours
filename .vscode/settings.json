@@ -1,6 +1,7 @@
 {
-    "cSpell.words": [
-        "attentix",
-        "Synerion"
-    ]
+	"cSpell.words": [
+		"attentix",
+		"Synerion"
+	],
+	"typescript.tsdk": "node_modules\\typescript\\lib"
 }

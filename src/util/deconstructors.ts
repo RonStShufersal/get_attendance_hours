@@ -1,11 +1,4 @@
-import {
-	Day,
-	Hour,
-	ValidDay,
-	ValidHour,
-	ValidMinute,
-	ValidMonth,
-} from '../types/hours';
+import { Day, Hour, ValidDay, ValidHour, ValidMinute, ValidMonth } from '../types/hours';
 
 export function getDayFromDayType(day: Day): ValidDay {
 	return day.dayValue.split('/')[0] as ValidDay;

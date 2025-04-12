@@ -10,11 +10,7 @@
 			"name": "Run cross-env",
 			"runtimeExecutable": "cross-env",
 			"cwd": "${workspaceFolder}",
-			"args": [
-        "INITIAL_SCRIPT=synerion",
-        "node",
-        "dist"
-      ]
+			"args": ["INITIAL_SCRIPT=synerion", "node", "dist"]
 		},
 		{
 			"type": "node",
