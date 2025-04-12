@@ -6,8 +6,10 @@ import { Day } from '../types/hours';
 import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../util/deconstructors';
 import fillInput from '../util/fillInput';
 
+// constants
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
 const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
+const RELEVANT_OPTION_VALUE = `2791`;
 
 const username = process.env.ATTENDIX_USERNAME || '';
 const password = process.env.ATTENTIX_PASSWORD || '';
@@ -24,6 +26,7 @@ export const submitAttendixHours = async (daysPayload: Day[]) => {
 	await handleLoginAttendix(page);
 	await fillOutAttendixHoursAndSubmit(page, daysPayload);
 
+	// TODO: uncomment this part
 	// await browser.close();
 };
 
@@ -61,7 +64,6 @@ async function handleLoginAttendix(page: Page) {
 }
 
 async function chooseAttentixAssignment(page: Page) {
-	const RELEVANT_OPTION_VALUE = `2791`;
 	const selectElement = await page.$('#assignments');
 
 	if (!selectElement) {
@@ -94,14 +96,13 @@ async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
 			process.exit(1);
 		}
 
-		// fill mission
 		await fillMissionInput(page, day);
 
 		await handleFillHourInputsStartAndEnd(page, day);
 	}
 
+	// TODO: uncomment this
 	// await button.click();
-
 	// await page.waitForNetworkIdle({ idleTime: 1000 });
 }
 
