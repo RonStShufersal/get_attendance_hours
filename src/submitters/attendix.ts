@@ -33,6 +33,7 @@ export const submitAttendixHours = async (daysPayload: Day[]): Promise<TAutomati
 
 		return AUTOMATION_RESULT_CODE.OK;
 	} catch (err) {
+		console.error(err);
 		return AUTOMATION_RESULT_CODE.ERROR;
 	}
 };
