@@ -1,6 +1,6 @@
-import { DayValue } from '../types/hours';
+import { DayValue } from '@/types/hours';
 
-export function dateFormat(date?: Date | number): DayValue {
+export default function dateFormat(date?: Date | number): DayValue {
 	return new Intl.DateTimeFormat('fr', {
 		day: 'numeric',
 		month: '2-digit',

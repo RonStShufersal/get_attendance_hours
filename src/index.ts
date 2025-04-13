@@ -1,4 +1,4 @@
-import scrapeSynerionAndSubmitToAttendix from './orchestrator/synerion_attendix';
+import scrapeSynerionAndSubmitToAttendix from '@/orchestrators/synerion_attendix';
 import dotenv from 'dotenv';
 
 dotenv.configDotenv();

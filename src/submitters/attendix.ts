@@ -1,10 +1,12 @@
 import { Page } from 'puppeteer';
-import { connect } from '../connect';
-import formAutomationError from '../errors/FormAutomationError';
-import { AttendixDayHours } from '../types/attendix';
-import { Day } from '../types/hours';
-import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../util/deconstructors';
-import fillInput from '../util/fillInput';
+import { connect } from '@/connect';
+import formAutomationError from '@/errors/FormAutomationError';
+import { Day } from '@/types/hours';
+import { getHourFromHours, getMinutesFromHours } from '@/util/types/deconstructors';
+import { fillInput } from '@/util/scrapingUtils/';
+import { AUTOMATION_RESULT_CODE, TAutomationResultCode } from '@/types/codes';
+import { setupPage } from '@/util/puppeteer';
+import { getHoursSelectors, getTableRowSelector } from '@/util/attendixUtils';
 
 // constants
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
@@ -14,20 +16,25 @@ const RELEVANT_OPTION_VALUE = `2791`;
 const username = process.env.ATTENDIX_USERNAME || '';
 const password = process.env.ATTENTIX_PASSWORD || '';
 
-export const submitAttendixHours = async (daysPayload: Day[]) => {
-	const browser = await connect();
-	const page = await browser.newPage();
+export const submitAttendixHours = async (daysPayload: Day[]): Promise<TAutomationResultCode> => {
+	try {
+		if (!username || !password) {
+			throw new Error('please provide both a username and a password');
+		}
 
-	if (!username || !password) {
-		throw new Error('please provide both a username and a password');
+		const browser = await connect();
+		const page = await setupPage(attentixLogin, browser);
+
+		await handleLoginAttendix(page);
+		await fillOutAttendixHoursAndSubmit(page, daysPayload);
+
+		// TODO: uncomment this part
+		// await browser.close();
+
+		return AUTOMATION_RESULT_CODE.OK;
+	} catch (err) {
+		return AUTOMATION_RESULT_CODE.ERROR;
 	}
-
-	await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
-	await handleLoginAttendix(page);
-	await fillOutAttendixHoursAndSubmit(page, daysPayload);
-
-	// TODO: uncomment this part
-	// await browser.close();
 };
 
 async function handleLoginAttendix(page: Page) {
@@ -86,7 +93,7 @@ async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
 
 	for (const day of days) {
 		try {
-			const tr = await page.$(getTrannySelector(day));
+			const tr = await page.$(rowSelector(day));
 			if (!tr) {
 				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
 			}
@@ -139,7 +146,7 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 }
 
 async function fillMissionInput(page: Page, day: Day) {
-	const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name"] ');
+	const missionInput = await page.$(rowSelector(day) + ' input[fieldname="assignment_name"] ');
 
 	if (!missionInput) {
 		formAutomationError('couldnt find mission input');
@@ -148,20 +155,6 @@ async function fillMissionInput(page: Page, day: Day) {
 	await missionInput.click();
 }
 
-function getTrannySelector(day: Day): string {
-	return `[id=${ATTENDIX_DAYS_TABLE_ID}] tr[row_no="${getDayFromDayType(day)}"]`;
-}
-
-function getHoursSelectors(day: Day): AttendixDayHours {
-	const dayNumber = getDayFromDayType(day);
-	return {
-		start: {
-			hour: `time_start_HH_${dayNumber}`,
-			minute: `time_start_MM_${dayNumber}`,
-		},
-		end: {
-			hour: `time_end_HH_${dayNumber}`,
-			minute: `time_end_MM_${dayNumber}`,
-		},
-	};
+function rowSelector(day: Day) {
+	return getTableRowSelector(ATTENDIX_DAYS_TABLE_ID, day);
 }

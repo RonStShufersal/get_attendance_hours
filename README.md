@@ -25,8 +25,6 @@ npm install
 1. Create a .env file in the root of the project with the following variables:
 
 ```bash
-SYNERION_USERNAME=<your_synerion_username>
-SYNERION_PASSWORD=<your_synerion_password>
 ATTENDIX_USERNAME=<your_attendix_username>
 ATTENDIX_PASSWORD=<your_attendix_password>
 ```

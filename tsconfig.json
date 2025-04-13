@@ -40,6 +40,11 @@
 			"@testing-library/dom",
 			"vitest/globals",
 			"@vitest/browser/providers/playwright"
-		]
+		],
+		"paths": {
+			"@/*": [
+				"./src/*"
+			]
+		}
 	}
 }

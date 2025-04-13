@@ -1,5 +1,5 @@
 import { Page } from 'puppeteer';
-import formAutomationError from '../errors/FormAutomationError';
+import formAutomationError from '@/errors/FormAutomationError';
 
 export default async function fillInput({
 	page,
