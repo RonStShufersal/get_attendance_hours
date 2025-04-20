@@ -1,8 +1,8 @@
-import { AttendixDayHours } from '@/types/attendix';
+import { AttenixDayHours } from '@/types/attenix';
 import { Day } from '@/types/hours';
 import { getDayFromDayType } from '@/util/types/deconstructors';
 
-export default function getHoursSelectors(day: Day): AttendixDayHours {
+export default function getHoursSelectors(day: Day): AttenixDayHours {
     const dayNumber = getDayFromDayType(day);
     return {
         start: {

@@ -6,17 +6,15 @@ import { getHourFromHours, getMinutesFromHours } from '@/util/types/deconstructo
 import { fillInput } from '@/util/scrapingUtils/';
 import { AUTOMATION_RESULT_CODE, TAutomationResultCode } from '@/types/codes';
 import { setupPage } from '@/util/puppeteer';
-import { getHoursSelectors, getTableRowSelector } from '@/util/attendixUtils';
+import { getAttenixCredentials, getHoursSelectors, getTableRowSelector } from '@/util/attenixUtils';
 
 // constants
 const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
-const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
+const ATTENIX_DAYS_TABLE_ID = 'tableDyn1';
 const RELEVANT_OPTION_VALUE = `2791`;
 
-const username = process.env.ATTENDIX_USERNAME || '';
-const password = process.env.ATTENTIX_PASSWORD || '';
-
-export const submitAttendixHours = async (daysPayload: Day[]): Promise<TAutomationResultCode> => {
+export const submitAttenixHours = async (daysPayload: Day[]): Promise<TAutomationResultCode> => {
+	const [username, password] = getAttenixCredentials();
 	try {
 		if (!username || !password) {
 			throw new Error('please provide both a username and a password');
@@ -25,8 +23,8 @@ export const submitAttendixHours = async (daysPayload: Day[]): Promise<TAutomati
 		const browser = await connect();
 		const page = await setupPage(attentixLogin, browser);
 
-		await handleLoginAttendix(page);
-		await fillOutAttendixHoursAndSubmit(page, daysPayload);
+		await handleLoginAttenix(page);
+		await fillOutAttenixHoursAndSubmit(page, daysPayload);
 
 		// TODO: uncomment this part
 		// await browser.close();
@@ -38,7 +36,9 @@ export const submitAttendixHours = async (daysPayload: Day[]): Promise<TAutomati
 	}
 };
 
-async function handleLoginAttendix(page: Page) {
+async function handleLoginAttenix(page: Page) {
+	const [username, password] = getAttenixCredentials();
+
 	if (!username || !password) {
 		throw new Error('cant login without credentials');
 	}
@@ -81,7 +81,7 @@ async function chooseAttentixAssignment(page: Page) {
 	await selectElement.select(RELEVANT_OPTION_VALUE);
 }
 
-async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
+async function fillOutAttenixHoursAndSubmit(page: Page, days: Day[]) {
 	console.log(days);
 
 	const button = await page.$('#save_btn');
@@ -157,5 +157,5 @@ async function fillMissionInput(page: Page, day: Day) {
 }
 
 function rowSelector(day: Day) {
-	return getTableRowSelector(ATTENDIX_DAYS_TABLE_ID, day);
+	return getTableRowSelector(ATTENIX_DAYS_TABLE_ID, day);
 }

@@ -11,14 +11,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "run:synerion": "cross-env INITIAL_SCRIPT=synerion node dist",
+    "start:attenix": "npm run build && cross-env INITIAL_SCRIPT=synerion.attenix node dist",
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "lint": "eslint --fix",
     "test:browser": "vitest"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint"
+      "pre-commit": "npm run lint",
+      "pre-start": "npm run build"
     }
   },
   "prettier": {

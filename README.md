@@ -7,7 +7,7 @@ This project automates the process of filling in your attendance hours. It scrap
 ## Features
 
 - Scrapes attendance data from Synerion's web interface.
-- Submits attendance data to your desired system (current support is for Attendix only).
+- Submits attendance data to your desired system (current support is for Attenix only).
 - Supports minimal error handling.
 
 ## Installation
@@ -25,8 +25,8 @@ npm install
 1. Create a .env file in the root of the project with the following variables:
 
 ```bash
-ATTENDIX_USERNAME=<your_attendix_username>
-ATTENDIX_PASSWORD=<your_attendix_password>
+ATTENIX_USERNAME=<your_attenix_username>
+ATTENIX_PASSWORD=<your_attenix_password>
 ```
 
 2. (Optional) Ensure that Docker is running if you are using Puppeteer with a Dockerized Chromium instance.
@@ -45,7 +45,7 @@ Run the automation script
 npm start
 ```
 
-The script currently supports Synerion and Attendix but is designed to accommodate additional platforms in the future.
+The script currently supports Synerion and Attenix but is designed to accommodate additional platforms in the future.
 
 ## Development
 
@@ -78,10 +78,10 @@ Launch the project in debug mode using the provided VS Code configuration. Open 
 - `src/`: Contains the main source code.
 
   - `scrapers/`: Logic for scraping attendance data from Synerion.
-  - `submitters/`: Logic for submitting data to Attendix.
+  - `submitters/`: Logic for submitting data to Attenix.
   - `util/`: Utility functions for form handling, date formatting, and type checks.
   - `errors/`: Custom error classes for better error handling.
-  - `types/`: Type definitions for Synerion and Attendix data structures.
+  - `types/`: Type definitions for Synerion and Attenix data structures.
 
 - `vitest-example`: Example test files for browser-based testing.
 
