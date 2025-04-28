@@ -1,16 +1,12 @@
 import { HTTPResponse, Page } from 'puppeteer';
 import { connect } from '../connect';
 import { Day, Hour } from '../types/hours';
-import { SynerionResponse } from '../types/synerion';
+import { SynerionDayDTO, SynerionResponse } from '../types/synerion';
 import { stringIsHourBase } from '../util/typeChecks';
 import scrapeError from '../errors/ScrapingError';
 import formAutomationError from '../errors/FormAutomationError';
 import fillInput from '../util/fillInput';
-import {
-	getDayFromDayType,
-	getHourFromHours,
-	getMinutesFromHours,
-} from '../util/deconstructors';
+import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../util/deconstructors';
 import { AttendixDayHours } from '../types/attendix';
 import { dateFormat } from '../util/dateFormat';
 
@@ -23,44 +19,63 @@ let username = '';
 let password = '';
 
 export const run = async () => {
-	username = process.env.ATTENTIX_USERNAME || '';
-	password = process.env.ATTENTIX_PASSWORD || '';
+	username = process.env.ATTENIX_USERNAME || '';
+	password = process.env.ATTENIX_PASSWORD || '';
 
 	if (!username || !password) {
 		throw new Error('please provide both a username and a password');
 	}
 	const browser = await connect();
 	const page = await browser.newPage();
-	let hoursWithDay = [] as Day[];
-	const eventHandler = async (response: HTTPResponse) => {
-		if (response.url() !== externalNetworkRequestURL || !response.ok) {
-			return;
-		}
-		const body = await response.json();
-		hoursWithDay = getDaysAndHoursFromSynerionResponse(body);
-	};
-	page.on('response', eventHandler);
-	await page.setViewport({ width: 1280, height: 1800 });
-	await page.goto(URL, { waitUntil: 'networkidle2' });
+	const hoursWithDay = [] as Day[];
+	await new Promise<void>((resolve) => {
+		const eventHandler = async (response: HTTPResponse) => {
+			if (
+				response.url() !== externalNetworkRequestURL ||
+				!response.ok ||
+				response.request().method() !== 'POST'
+			) {
+				return;
+			}
+			const body = await response.json();
+			hoursWithDay.push(...getDaysAndHoursFromSynerionResponse(body));
+			page.off('response', eventHandler);
+			resolve();
+		};
+		page.on('response', eventHandler);
+		page.setViewport({ width: 1280, height: 1800 }).then(() => {
+			page.goto(URL, { waitUntil: 'networkidle2' });
+		});
+	});
 
 	await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
-	page.off('response', eventHandler);
 	await handleLoginAttendix(page);
 	await fillOutAttendixHoursAndSubmit(page, hoursWithDay);
 
 	// await browser.close();
 };
 
-function getDaysAndHoursFromSynerionResponse(
-	response: SynerionResponse,
-): Day[] {
-	return response.DailyBrowserDtos.filter(
-		(res) =>
-			res.Date &&
-			new Date().toISOString().slice(0, 10) !== res.Date.slice(0, 10) &&
-			res.InOuts[0]?.In.Time &&
-			res.InOuts[0]?.Out.Time,
-	).map((res) => {
+function isDayValidAndReadyForSubmit(synDay: SynerionDayDTO, todayDate: string): boolean {
+	if (!synDay.InOuts[0]?.In.Time || !synDay.InOuts[0]?.Out.Time) {
+		return false;
+	}
+	const InTime = synDay.InOuts[0].In.Time;
+	const OutTime = synDay.InOuts[0].Out.Time;
+	
+	const [inHour, inMinute, inSecs] = InTime.split(':').map(n => parseInt(n));
+	const [outHour, outMinute, outSecs] = OutTime.split(':').map(n => parseInt(n));
+
+	// prettier-ignore
+	return Boolean(
+		synDay.Date && todayDate !== synDay.Date.slice(0, 10) && 
+		inHour && inMinute && 
+		outHour && outMinute,
+	);
+}
+
+function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] {
+	const todayDate = '';
+	return response.DailyBrowserDtos.filter((res) => isDayValidAndReadyForSubmit(res, todayDate)).map((res) => {
 		const { Date: day } = res;
 		const { In, Out } = res.InOuts[0];
 
@@ -190,9 +205,7 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 }
 
 async function fillMissionInput(page: Page, day: Day) {
-	const missionInput = await page.$(
-		getTrannySelector(day) + ' input[fieldname="assignment_name"] ',
-	);
+	const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name"] ');
 
 	if (!missionInput) {
 		formAutomationError('couldnt find mission input');

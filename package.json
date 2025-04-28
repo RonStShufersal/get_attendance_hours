@@ -11,22 +11,19 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "tsdx watch",
-    "run:synerion": "cross-env INITIAL_SCRIPT=synerion node dist",
-    "build": "tsdx build",
-    "test": "tsdx test",
+    "start:attenix": "npm run build && cross-env INITIAL_SCRIPT=synerion node dist",
+    "build": "tsup src/index.ts --format esm,cjs --dts",
     "lint": "eslint --fix",
-    "prepare": "tsdx build",
-    "size": "size-limit",
-    "analyze": "size-limit --why"
+    "test:browser": "vitest"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "tsdx lint"
+      "pre-commit": "npm run lint",
+      "pre-start": "npm run build"
     }
   },
   "prettier": {
-    "printWidth": 80,
+    "printWidth": 110,
     "semi": true,
     "singleQuote": true,
     "trailingComma": "all",
@@ -37,27 +34,22 @@
   "name": "fill_attendance_hours",
   "author": "RonStrauss",
   "module": "dist/fill_attendance_hours.esm.js",
-  "size-limit": [
-    {
-      "path": "dist/fill_attendance_hours.cjs.production.min.js",
-      "limit": "10 KB"
-    },
-    {
-      "path": "dist/fill_attendance_hours.esm.js",
-      "limit": "10 KB"
-    }
-  ],
   "devDependencies": {
-    "@eslint/js": "^9.23.0",
-    "@size-limit/preset-small-lib": "^11.2.0",
+    "@changesets/cli": "^2.28.1",
+    "@eslint/js": "^9.24.0",
+    "@types/node": "^22.14.1",
+    "@vitest/browser": "^3.1.1",
     "cross-env": "^7.0.3",
-    "eslint": "^9.23.0",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
     "husky": "^9.1.7",
+    "playwright": "^1.51.1",
     "prettier": "^3.5.3",
-    "size-limit": "^11.2.0",
-    "tsdx": "^0.14.1",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.29.0"
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.29.1",
+    "vitest": "^3.1.1"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
