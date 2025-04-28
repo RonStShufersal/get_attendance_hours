@@ -1,4 +1,4 @@
-export type Hour = `${number}:${number}`;
+export type Hour = `${number}:${number}:${number}`;
 export type DayValue = `${ValidDay}/${ValidMonth}`;
 
 export interface Day {
