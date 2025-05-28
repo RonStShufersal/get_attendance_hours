@@ -9,6 +9,7 @@ import fillInput from '../util/fillInput';
 import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../util/deconstructors';
 import { AttendixDayHours } from '../types/attendix';
 import { dateFormat } from '../util/dateFormat';
+import { isTimeInExpectedRanges } from '../util/validators';
 
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
@@ -61,15 +62,15 @@ function isDayValidAndReadyForSubmit(synDay: SynerionDayDTO, todayDate: string):
 	}
 	const InTime = synDay.InOuts[0].In.Time;
 	const OutTime = synDay.InOuts[0].Out.Time;
-	
-	const [inHour, inMinute, inSecs] = InTime.split(':').map(n => parseInt(n));
-	const [outHour, outMinute, outSecs] = OutTime.split(':').map(n => parseInt(n));
+
+	const [inHour, inMinute, inSecs] = InTime.split(':').map((n) => parseInt(n));
+	const [outHour, outMinute, outSecs] = OutTime.split(':').map((n) => parseInt(n));
 
 	// prettier-ignore
 	return Boolean(
 		synDay.Date && todayDate !== synDay.Date.slice(0, 10) && 
-		inHour && inMinute && 
-		outHour && outMinute,
+		isTimeInExpectedRanges(inHour, inMinute) &&
+		isTimeInExpectedRanges(outHour, outMinute)
 	);
 }
 
@@ -116,7 +117,7 @@ async function handleLoginAttendix(page: Page) {
 		await fillInput({ ...input, page });
 	}
 
-	const submitButton = await page.$('#image1');
+	const submitButton = await page.$('#login-button');
 
 	if (submitButton === null) {
 		formAutomationError('couldnt find submit button');
@@ -181,34 +182,42 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 	const hourOut = String(getHourFromHours(day.hours.out));
 	const minuteOut = String(getMinutesFromHours(day.hours.out));
 
+	const defaultOptions = { page, earlyReturnOnNonEmpty: true };
+
 	await fillInput({
-		page,
+		...defaultOptions,
 		inputSelector: start.hour,
 		inputValue: hourIn,
 	});
 	await fillInput({
-		page,
+		...defaultOptions,
 		inputSelector: start.minute,
 		inputValue: minuteIn,
 	});
 
 	await fillInput({
-		page,
+		...defaultOptions,
 		inputSelector: end.hour,
 		inputValue: hourOut,
 	});
 	await fillInput({
-		page,
+		...defaultOptions,
 		inputSelector: end.minute,
 		inputValue: minuteOut,
 	});
 }
 
-async function fillMissionInput(page: Page, day: Day) {
+async function fillMissionInput(page: Page, day: Day, forceFill = false) {
 	const missionInput = await page.$(getTrannySelector(day) + ' input[fieldname="assignment_name"] ');
 
 	if (!missionInput) {
 		formAutomationError('couldnt find mission input');
+	}
+
+	const currentValue = await missionInput.evaluate((input) => (input as HTMLInputElement).value);
+
+	if (currentValue && !forceFill) {
+		return;
 	}
 
 	await missionInput.click();
