@@ -1,7 +1,7 @@
 import { automateAttenixHoursEntry } from './automators/attenix';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
 import scrapeError from './errors/ScrapingError';
-import { getDaysFromSynerion } from './scripts/synerion';
+import { getDaysFromSynerion } from './scrapers/synerion';
 import { Day } from './types/hours';
 
 export async function main() {
