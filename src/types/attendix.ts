@@ -1,6 +1,4 @@
-// import { ValidDay } from './hours';
-
-export interface AttendixPayload {
+export type AttendixPayload = {
 	session_id: string;
 	sec_session_id: string;
 	day_1: string;
@@ -553,27 +551,14 @@ export interface AttendixPayload {
 	filter_show_units_or_hrs: string;
 	filter_show_all_hidden: string;
 	filter_pp_year: string;
-}
+};
 
-// export type AttendixHourInput<T = 'start' | 'end'> = T extends 'start'
 export type AttendixHourInput = {
 	hour: string;
 	minute: string;
 };
-// ? {
-// 		hour: `time_start_HH_${ValidDay}`;
-// 		minute: `time_start_MM_${ValidDay}`;
-// 	}
-// : T extends 'end'
-// 	? {
-// 			hour: `time_end_HH_${ValidDay}`;
-// 			minute: `time_end_MM_${ValidDay}`;
-// 		}
-// 	: never;
 
-export interface AttendixDayHours {
-	// start: AttendixHourInput<'start'>;
-	// end: AttendixHourInput<'end'>;
+export type AttendixDayHours = {
 	start: AttendixHourInput;
 	end: AttendixHourInput;
-}
+};

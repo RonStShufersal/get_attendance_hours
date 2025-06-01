@@ -63,8 +63,8 @@ function isDayValidAndReadyForSubmit(synDay: SynerionDayDTO, todayDate: string):
 	const InTime = synDay.InOuts[0].In.Time;
 	const OutTime = synDay.InOuts[0].Out.Time;
 
-	const [inHour, inMinute, inSecs] = InTime.split(':').map((n) => parseInt(n));
-	const [outHour, outMinute, outSecs] = OutTime.split(':').map((n) => parseInt(n));
+	const [inHour, inMinute] = InTime.split(':').map((n) => parseInt(n)).slice(0, 2);
+	const [outHour, outMinute] = OutTime.split(':').map((n) => parseInt(n)).slice(0, 2);
 
 	// prettier-ignore
 	return Boolean(

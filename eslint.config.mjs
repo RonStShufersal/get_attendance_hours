@@ -9,5 +9,10 @@ export default tseslint.config(
     tseslint.configs.stylistic,
     {
         ignores: ['dist/*']
+    },
+    {
+        rules: {
+            "@typescript-eslint/consistent-type-definitions": ["error", "type"]
+        }
     }
 );
