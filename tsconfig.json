@@ -2,10 +2,11 @@
   // see https://www.typescriptlang.org/tsconfig to better understand tsconfigs
   "include": [
     "src",
-    "types"
+    "types",
+    "index.d.ts"
   ],
   "compilerOptions": {
-    "module": "esnext",
+    "module": "nodenext",
     "lib": [
       "dom",
       "esnext"
@@ -21,12 +22,10 @@
     "strict": true,
     // linter checks for common issues
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    // noUnused* overlap with @typescript-eslint/no-unused-vars, can disable if duplicative
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     // use Node's module resolution algorithm, instead of the legacy TS one
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     // interop between ESM and CJS modules. Recommended by TS
     "esModuleInterop": true,
     // significant perf increase by skipping checking .d.ts files, particularly those in node_modules. Recommended by TS
