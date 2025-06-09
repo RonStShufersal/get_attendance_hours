@@ -1,4 +1,4 @@
-export interface AttenixPayload {
+export type AttendixPayload = {
 	session_id: string;
 	sec_session_id: string;
 	day_1: string;
@@ -551,14 +551,14 @@ export interface AttenixPayload {
 	filter_show_units_or_hrs: string;
 	filter_show_all_hidden: string;
 	filter_pp_year: string;
-}
+};
 
-export type AttenixHourInput = {
+export type AttendixHourInput = {
 	hour: string;
 	minute: string;
 };
 
-export interface AttenixDayHours {
-	start: AttenixHourInput;
-	end: AttenixHourInput;
-}
+export type AttendixDayHours = {
+	start: AttendixHourInput;
+	end: AttendixHourInput;
+};

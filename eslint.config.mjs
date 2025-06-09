@@ -3,16 +3,17 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default defineConfig([
-  globalIgnores(['dist/**']),
-  { files: ['**/*.{js,mjs,cjs,ts}'], plugins: { js }, extends: ['js/recommended'] },
-  { files: ['**/*.{js,mjs,cjs,ts}'], languageOptions: { globals: globals.node } },
-  tseslint.configs.recommended,
-  {
-    rules: {
-      "@typescript-eslint/no-namespace": ["error", {
-        allowDeclarations: true
-      }]
+export default tseslint.config(
+    eslint.configs.recommended,
+    tseslint.configs.strict,
+    tseslint.configs.stylistic,
+    {
+        ignores: ['dist/*']
+    },
+    {
+        rules: {
+            "@typescript-eslint/consistent-type-definitions": ["error", "type"]
+        }
     }
   }
 ]);

@@ -1,15 +1,15 @@
 export type Hour = `${number}:${number}:${number}`;
 export type DayValue = `${ValidDay}/${ValidMonth}`;
 
-export interface Day {
+export type Day = {
 	dayValue: DayValue;
 	hours: DayHours;
-}
+};
 
-export interface DayHours {
+export type DayHours = {
 	in: Hour;
 	out: Hour;
-}
+};
 
 export type ValidDay =
 	| `${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`
