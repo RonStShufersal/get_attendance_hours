@@ -3,9 +3,9 @@ declare namespace NodeJS {
 	export interface ProcessEnv {
 		// TODO Add all expected env variables
 		SCRAPING_TARGET?: 'synerion';
-		AUTOMATION_TARGET?: 'attenix';
+		AUTOMATION_TARGET?: 'webtime';
 
-		ATTENIX_USERNAME?: string;
-		ATTENIX_PASSWORD?: string;
+		WEBTIME_USERNAME?: string;
+		WEBTIME_PASSWORD?: string;
 	}
 }

@@ -3,28 +3,28 @@ import formAutomationError from '../errors/FormAutomationError';
 import { Day } from '../types/hours';
 import fillInput from '../util/fillInput';
 import { connect } from '../connect';
-import { AttendixDayHours } from '../types/attendix';
+import { WebtimeDayHours } from '../types/webtime';
 import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../util/deconstructors';
 
-const attentixLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
-const ATTENDIX_DAYS_TABLE_ID = 'tableDyn1';
+const webtimeLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
+const WEBTIME_DAYS_TABLE_ID = 'tableDyn1';
 
-export async function automateAttenixHoursEntry(days: Day[]) {
-	const username = process.env.ATTENIX_USERNAME;
-	const password = process.env.ATTENIX_PASSWORD;
+export async function automateWebtimeHoursEntry(days: Day[]) {
+	const username = process.env.WEBTIME_USERNAME;
+	const password = process.env.WEBTIME_PASSWORD;
 
 	if (!username || !password) {
-		throw new Error('Missing for attenix automator: username or password');
+		throw new Error('Missing for webtime automator: username or password');
 	}
 	const browser = await connect();
 	const page = await browser.newPage();
 
 	await handleLogin(page, { username, password });
-	await fillOutAttendixHoursAndSubmit(page, days);
+	await fillOutWebtimeHoursAndSubmit(page, days);
 }
 
 async function handleLogin(page: Page, credentials: { username: string; password: string }) {
-	await page.goto(attentixLogin, { waitUntil: 'networkidle2' });
+	await page.goto(webtimeLogin, { waitUntil: 'networkidle2' });
 
 	const { password, username } = credentials;
 	if (!username || !password) {
@@ -35,12 +35,12 @@ async function handleLogin(page: Page, credentials: { username: string; password
 		{
 			inputSelector: 'email',
 			inputValue: username,
-			errorMsg: 'couldnt find attentix email input',
+			errorMsg: 'couldnt find webtime email input',
 		},
 		{
 			inputSelector: 'password',
 			inputValue: password,
-			errorMsg: 'couldnt find attentix password input',
+			errorMsg: 'couldnt find webtime password input',
 		},
 	];
 
@@ -59,7 +59,7 @@ async function handleLogin(page: Page, credentials: { username: string; password
 	await page.waitForNavigation({ waitUntil: 'networkidle2' });
 }
 
-async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
+async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
 	console.log(days);
 
 	const button = await page.$('#save_btn');
@@ -68,7 +68,7 @@ async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
 		formAutomationError('couldnt find save button');
 	}
 
-	await chooseAttentixAssignment(page);
+	await chooseWebtimeAssignment(page);
 
 	for (const day of days) {
 		try {
@@ -88,12 +88,14 @@ async function fillOutAttendixHoursAndSubmit(page: Page, days: Day[]) {
 		await handleFillHourInputsStartAndEnd(page, day);
 	}
 
-	// await button.click();
+	await button.click();
 
-	// await page.waitForNetworkIdle({ idleTime: 1000 });
+	await page.waitForNetworkIdle({ idleTime: 1000 });
+
+	await new Promise((res) => setTimeout(res,100 * 10 * 1000));
 }
 
-async function chooseAttentixAssignment(page: Page) {
+async function chooseWebtimeAssignment(page: Page) {
 	const RELEVANT_OPTION_VALUE = `2791`;
 	const selectElement = await page.$('#assignments');
 
@@ -155,10 +157,10 @@ async function fillMissionInput(page: Page, day: Day, forceFill = false) {
 }
 
 function getTrannySelector(day: Day): string {
-	return `[id=${ATTENDIX_DAYS_TABLE_ID}] tr[row_no="${getDayFromDayType(day)}"]`;
+	return `[id=${WEBTIME_DAYS_TABLE_ID}] tr[row_no="${getDayFromDayType(day)}"]`;
 }
 
-function getHoursSelectors(day: Day): AttendixDayHours {
+function getHoursSelectors(day: Day): WebtimeDayHours {
 	const dayNumber = getDayFromDayType(day);
 	return {
 		start: {

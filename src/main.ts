@@ -1,4 +1,4 @@
-import { automateAttenixHoursEntry } from './automators/attenix';
+import { automateWebtimeHoursEntry } from './automators/webtime';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
 import scrapeError from './errors/ScrapingError';
 import { getDaysFromSynerion } from './scrapers/synerion';
@@ -25,8 +25,8 @@ export async function main() {
 			break;
 	}
 	switch (automationTarget) {
-		case 'attenix':
-			await automateAttenixHoursEntry(scrapingResponse);
+		case 'webtime':
+			await automateWebtimeHoursEntry(scrapingResponse);
 			break;
 
 		case undefined:
@@ -51,10 +51,10 @@ async function populateDaysFromSynerion(days: Day[]) {
 }
 
 function validateAllEnvVariablesExist() {
-	const username = process.env.ATTENIX_USERNAME;
-	const password = process.env.ATTENIX_PASSWORD;
+	const username = process.env.WEBTIME_USERNAME;
+	const password = process.env.WEBTIME_PASSWORD;
 
 	if (!username || !password) {
-		missingEnvironmentError('Missing env variables: ATTENIX_USERNAME or ATTENIX_PASSWORD');
+		missingEnvironmentError('Missing env variables: WEBTIME_USERNAME or WEBTIME_PASSWORD');
 	}
 }

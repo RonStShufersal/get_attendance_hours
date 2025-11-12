@@ -1,4 +1,4 @@
-export type AttendixPayload = {
+export type WebtimePayload = {
 	session_id: string;
 	sec_session_id: string;
 	day_1: string;
@@ -553,12 +553,12 @@ export type AttendixPayload = {
 	filter_pp_year: string;
 };
 
-export type AttendixHourInput = {
+export type WebtimeHourInput = {
 	hour: string;
 	minute: string;
 };
 
-export type AttendixDayHours = {
-	start: AttendixHourInput;
-	end: AttendixHourInput;
+export type WebtimeDayHours = {
+	start: WebtimeHourInput;
+	end: WebtimeHourInput;
 };
