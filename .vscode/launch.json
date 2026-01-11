@@ -5,16 +5,21 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Launch via NPM",
+			"request": "launch",
+			"runtimeArgs": ["run-script", "start"],
+			"runtimeExecutable": "npm",
+			"skipFiles": ["<node_internals>/**"],
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"type": "node"
+		},
+		{
 			"type": "node",
 			"request": "launch",
 			"name": "Run cross-env",
 			"runtimeExecutable": "cross-env",
 			"cwd": "${workspaceFolder}",
-			"args": [
-        "INITIAL_SCRIPT=synerion",
-        "node",
-        "dist"
-      ]
+			"args": ["INITIAL_SCRIPT=synerion", "node", "dist"]
 		},
 		{
 			"type": "node",
@@ -23,6 +28,34 @@
 			"skipFiles": ["<node_internals>/**"],
 			"program": "${workspaceFolder}\\dist\\index.js",
 			"outFiles": ["${workspaceFolder}/**/*.js"]
+		},
+
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug: dist (webtime)",
+			"program": "${workspaceFolder}/dist/index.js",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"env": {
+				"SCRAPING_TARGET": "hilan",
+				"AUTOMATION_TARGET": "webtime"
+			},
+			"preLaunchTask": "tsc: build - tsconfig.json",
+			"skipFiles": ["<node_internals>/**"]
+		},
+
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug: npm start:hilan:webtime",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["run", "start:hilan:webtime"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"sourceMaps": true,
+			"skipFiles": ["<node_internals>/**"]
 		}
 	]
 }

@@ -1,7 +1,7 @@
 import { Page } from 'puppeteer';
 import formAutomationError from '../errors/FormAutomationError';
 import { Day } from '../types/hours';
-import fillInput from '../util/fillInput';
+import { fillInputByName } from '../util/fillInput';
 import { connect } from '../connect';
 import { WebtimeDayHours } from '../types/webtime';
 import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../util/deconstructors';
@@ -45,7 +45,7 @@ async function handleLogin(page: Page, credentials: { username: string; password
 	];
 
 	for (const input of inputs) {
-		await fillInput({ ...input, page });
+		await fillInputByName({ ...input, page });
 	}
 
 	const submitButton = await page.$('#login-button');
@@ -92,7 +92,7 @@ async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
 
 	await page.waitForNetworkIdle({ idleTime: 1000 });
 
-	await new Promise((res) => setTimeout(res,100 * 10 * 1000));
+	await new Promise((res) => setTimeout(res, 100 * 10 * 1000));
 }
 
 async function chooseWebtimeAssignment(page: Page) {
@@ -117,23 +117,23 @@ async function handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 
 	const defaultOptions = { page, earlyReturnOnNonEmpty: true };
 
-	await fillInput({
+	await fillInputByName({
 		...defaultOptions,
 		inputSelector: start.hour,
 		inputValue: hourIn,
 	});
-	await fillInput({
+	await fillInputByName({
 		...defaultOptions,
 		inputSelector: start.minute,
 		inputValue: minuteIn,
 	});
 
-	await fillInput({
+	await fillInputByName({
 		...defaultOptions,
 		inputSelector: end.hour,
 		inputValue: hourOut,
 	});
-	await fillInput({
+	await fillInputByName({
 		...defaultOptions,
 		inputSelector: end.minute,
 		inputValue: minuteOut,

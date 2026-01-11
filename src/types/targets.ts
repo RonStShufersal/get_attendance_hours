@@ -1,0 +1,1 @@
+export type Target = typeof process.env.AUTOMATION_TARGET | typeof process.env.SCRAPING_TARGET;

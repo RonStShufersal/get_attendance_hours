@@ -11,8 +11,9 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"start": "npm run start:webtime",
-		"start:webtime": "npm run build && cross-env SCRAPING_TARGET=synerion AUTOMATION_TARGET=webtime node dist",
+		"start": "npm run start:hilan:webtime",
+		"start:synerion:webtime": "npm run build && cross-env SCRAPING_TARGET=synerion AUTOMATION_TARGET=webtime node dist",
+		"start:hilan:webtime": "npm run build && cross-env SCRAPING_TARGET=hilan AUTOMATION_TARGET=webtime node dist",
 		"build": "tsup src/index.ts --format esm,cjs --dts",
 		"lint": "eslint --fix",
 		"test:browser": "vitest"

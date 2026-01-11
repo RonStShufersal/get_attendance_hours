@@ -1,6 +1,7 @@
 import { automateWebtimeHoursEntry } from './automators/webtime';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
 import scrapeError from './errors/ScrapingError';
+import { getDaysFromHilan } from './scrapers/hilan';
 import { getDaysFromSynerion } from './scrapers/synerion';
 import { Day } from './types/hours';
 
@@ -12,6 +13,10 @@ export async function main() {
 	switch (scrapingTarget) {
 		case 'synerion':
 			await populateDaysFromSynerion(scrapingResponse);
+			break;
+
+		case 'hilan':
+			await populateDaysFromHilan(scrapingResponse);
 			break;
 
 		case undefined:
@@ -47,7 +52,14 @@ async function populateDaysFromSynerion(days: Day[]) {
 		scrapeError('No days scraped from synerion');
 	}
 	days.push(...response);
-	return;
+}
+
+async function populateDaysFromHilan(days: Day[]) {
+	const response = await getDaysFromHilan();
+	if (!response?.length) {
+		scrapeError('No days scraped from synerion');
+	}
+	days.push(...response);
 }
 
 function validateAllEnvVariablesExist() {
