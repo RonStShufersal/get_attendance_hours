@@ -55,7 +55,7 @@ async function handleLogin(page: Page, credentials: { username?: string; passwor
 }
 
 async function handleNavigateToHoursLog(page: Page) {
-	const hoursLogAnchorHref = await page.$eval('[href*=calendar]', (el) =>
+	const hoursLogAnchorHref = await page.$eval('[href*=AttendanceApproval]', (el) =>
 		el ? (el as HTMLAnchorElement).href : formAutomationError('couldnt find hoursLogAnchor'),
 	);
 

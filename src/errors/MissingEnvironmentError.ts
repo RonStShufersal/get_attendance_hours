@@ -6,5 +6,5 @@ export class MissingEnvironmentError extends Error {
 }
 
 export default function missingEnvironmentError(message?: string): never {
-	throw new MissingEnvironmentError(message);
+	throw new MissingEnvironmentError(message ?? 'missing one or more environment variables');
 }

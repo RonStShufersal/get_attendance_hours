@@ -1,4 +1,4 @@
-export type WebtimePayload = {
+export interface WebtimePayload {
 	session_id: string;
 	sec_session_id: string;
 	day_1: string;
@@ -551,14 +551,14 @@ export type WebtimePayload = {
 	filter_show_units_or_hrs: string;
 	filter_show_all_hidden: string;
 	filter_pp_year: string;
-};
+}
 
-export type WebtimeHourInput = {
+export interface WebtimeHourInput {
 	hour: string;
 	minute: string;
-};
+}
 
-export type WebtimeDayHours = {
+export interface WebtimeDayHours {
 	start: WebtimeHourInput;
 	end: WebtimeHourInput;
-};
+}

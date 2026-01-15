@@ -1,13 +1,13 @@
 import { Page } from 'puppeteer';
 import formAutomationError from '../errors/FormAutomationError';
 
-type FillInputOptions = {
+export interface FillInputOptions {
 	page: Page;
 	inputSelector: string;
 	inputValue: string;
 	errorMsg?: string;
 	earlyReturnOnNonEmpty?: boolean;
-};
+}
 
 export async function fillInputByName(options: FillInputOptions) {
 	const selector = `input[name=${options.inputSelector}]`;
