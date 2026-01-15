@@ -1,3 +1,4 @@
+import { Page } from 'puppeteer';
 import { connect } from '../connect';
 import { Day } from '../types/hours';
 
@@ -8,13 +9,16 @@ export abstract class Scraper {
 		return await browser.newPage();
 	}
 
-	protected async getPage() {
+	/**
+	 * Returns a new page.
+	 *
+	 * *Note* - calling this will create a new page each time. Be sure to dispose of it when you're done.
+	 */
+	protected async getPage(): Promise<Page> {
 		return await this._page();
 	}
 
 	abstract getDays(): Promise<Day[]>;
-
-	// abstract handleLogin(): Promise<void>;
-	// abstract navigateToHoursLog(): Promise<void>;
-	// abstract scrapeDays(): Promise<Day[]>;
+	protected abstract handleLogin(page: Page): Promise<void>;
+	protected abstract navigateToHoursLog(page: Page): Promise<void>;
 }
