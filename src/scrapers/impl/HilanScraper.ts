@@ -1,4 +1,4 @@
-import { Day } from '../../types/hours';
+import { Day, DayHours, DayValue, Hour } from '../../types/hours';
 import { Scraper } from '../Scraper';
 import { getCredentials } from '../../util/getCredentials';
 import { DefaultLoginStrategy } from '../util/impl/DefaultLoginStrategy';
@@ -7,16 +7,27 @@ import missingCredentialsError from '../../errors/MissingCredentialsError';
 import { Page } from 'puppeteer';
 import formAutomationError from '../../errors/FormAutomationError';
 import scrapeError from '../../errors/ScrapingError';
+import { UnsupportedConfigError } from '../../errors/UnsupportedError';
 
 export class HilanScraper extends Scraper {
 	protected readonly INITIAL_URL: string = 'https://shufersal.net.hilan.co.il/login';
 
+	protected readonly config = {
+		dayModifiersSupport: {
+			vacation: false,
+			sickDays: false,
+			splitDays: false,
+		},
+	};
+
 	async getDays(): Promise<Day[]> {
+		this.validateConfigValues();
 		const page = await super.getPage();
 		await this.handleLogin(page);
 		await this.navigateToHoursLog(page);
 		await this.prepareHoursLogPageForScraping(page);
 		const days = await this.scrapeDays(page);
+		console.log({ days });
 		return days;
 	}
 
@@ -75,14 +86,112 @@ export class HilanScraper extends Scraper {
 			await element.click();
 		}
 
-		await page.click('[id*=RefreshSelectedDays]');
+		await page.click('input[id*=RefreshSelectedDays]');
 
 		await page.waitForNetworkIdle();
 	}
 
 	private async scrapeDays(page: Page): Promise<Day[]> {
-		// Use the following logic for entry/exit, branch out of the DOM node
-		//document.querySelectorAll('td[id*=cellOf_ManualEntry], td[id*=cellOf_ManualExit]')[0].parentElement.previousSibling
-		return [];
+		// ignore rows with empty values, config does not support any other behavior at the moment
+		const dayHashMap: Record<DayValue, DayHours[]> = await page.$$eval(
+			'tr[class]:has(tr td[id*=cellOf_ManualEntry] input[value])',
+			(rows) =>
+				rows
+					// .filter((row) => !row.querySelector('input:not([value])'))
+					.map((row) => {
+						// extractDayValueFromRow
+						const day = row.children[0].textContent
+							?.split(' ')[0]
+							.split('/')
+							.map((n) => parseInt(n))
+							.join('/') as DayValue | undefined;
+						// if (!day) return;
+
+						// const hours = extractHoursValueFromRow(row);
+						const dayHoursInputs = row.querySelectorAll(
+							'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
+						);
+
+						// if (dayHoursInputs?.length !== 2) {
+						// 	throw new Error(`couldnt scrape hours from row ${row.id}, didn't find both inputs`);
+						// }
+
+						const hours = (Array.from(dayHoursInputs) as HTMLInputElement[]).map(
+							(inpt) => inpt.value,
+						) as Hour[];
+						// if (hours.length != 2) {
+						// 	throw new Error(`couldnt scrape hours from row ${row.id}, not properly formatted`);
+						// }
+						// dayHashMap[day] ??= [];
+						// dayHashMap[day].push({
+						// 	in: hours[0],
+						// 	out: hours[1],
+						// });
+
+						return { day, hours };
+					})
+					.filter(({ day, hours }) => !!day && !!hours)
+					.reduce(
+						(p, c) => {
+							if (c?.day) {
+								p[c.day] ??= [];
+								p[c.day].push({
+									in: c.hours[0],
+									out: c.hours[1],
+								});
+							}
+							return p;
+						},
+						{} as Record<DayValue, DayHours[]>, // Prepare for split days support;)
+					),
+		);
+		// console.log({ dayHashMap });
+		return Object.entries(dayHashMap).map((entry) => ({
+			dayValue: entry[0] as DayValue,
+			hours: entry[1][0] as DayHours,
+		}));
+		// return dayArray;
 	}
+
+	// private hasEmptyInput(element: HTMLElement): boolean {
+	// 	const anyEmpty = element.querySelector('input:not([value])');
+	// 	return Boolean(anyEmpty);
+	// }
+
+	private validateConfigValues() {
+		if (this.config.dayModifiersSupport.sickDays) {
+			throw new UnsupportedConfigError('sick days scraping are not currently supported');
+		}
+		if (this.config.dayModifiersSupport.splitDays) {
+			throw new UnsupportedConfigError('split days scraping are not currently supported');
+		}
+		if (this.config.dayModifiersSupport.vacation) {
+			throw new UnsupportedConfigError('vacation days scraping are not currently supported');
+		}
+	}
+
+	// private extractDayValueFromRow(row: HTMLTableRowElement): DayValue | undefined {
+	// 	return row.children[0].textContent?.split(' ')[0].split('/').map(parseInt).join('/') as
+	// 		| DayValue
+	// 		| undefined;
+	// }
+
+	// private extractHoursValueFromRow(row: HTMLTableRowElement): DayHours {
+	// 	const dayHoursInputs = row.querySelectorAll(
+	// 		'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
+	// 	);
+	// 	if (dayHoursInputs?.length !== 2) {
+	// 		throw new ScrapingError(`couldnt scrape hours from row ${row.id}, didn't find both inputs`);
+	// 	}
+	// 	const hours = (Array.from(dayHoursInputs) as HTMLInputElement[])
+	// 		.map((inpt) => inpt.value)
+	// 		.filter(stringIsHourBase);
+	// 	if (hours.length != 2) {
+	// 		throw new ScrapingError(`couldnt scrape hours from row ${row.id}, not properly formatted`);
+	// 	}
+	// 	return {
+	// 		in: hours[0],
+	// 		out: hours[1],
+	// 	};
+	// }
 }
