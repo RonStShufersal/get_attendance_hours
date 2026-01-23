@@ -14,3 +14,7 @@ export class UnsupportedConfigError extends Error {
 		this.name = 'UnsupportedConfig';
 	}
 }
+
+export function unsupportedConfigError(message?: string): never {
+	throw new UnsupportedConfigError(message ?? 'config value not supported');
+}

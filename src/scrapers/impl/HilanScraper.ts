@@ -6,8 +6,10 @@ import { LoginInputStrategy, SelectorLookupStrategy } from '../types/LoginInputS
 import missingCredentialsError from '../../errors/MissingCredentialsError';
 import { Page } from 'puppeteer';
 import formAutomationError from '../../errors/FormAutomationError';
-import scrapeError from '../../errors/ScrapingError';
-import { UnsupportedConfigError } from '../../errors/UnsupportedError';
+import scrapeError, { ScrapingError } from '../../errors/ScrapingError';
+import { unsupportedConfigError, UnsupportedConfigError } from '../../errors/UnsupportedError';
+import { RawDayRow } from '../types/CommonScrapingTypes';
+import { stringIsHourBase } from '../../util/typeChecks';
 
 export class HilanScraper extends Scraper {
 	protected readonly INITIAL_URL: string = 'https://shufersal.net.hilan.co.il/login';
@@ -92,73 +94,19 @@ export class HilanScraper extends Scraper {
 	}
 
 	private async scrapeDays(page: Page): Promise<Day[]> {
-		// ignore rows with empty values, config does not support any other behavior at the moment
-		const dayHashMap: Record<DayValue, DayHours[]> = await page.$$eval(
-			'tr[class]:has(tr td[id*=cellOf_ManualEntry] input[value])',
-			(rows) =>
-				rows
-					// .filter((row) => !row.querySelector('input:not([value])'))
-					.map((row) => {
-						// extractDayValueFromRow
-						const day = row.children[0].textContent
-							?.split(' ')[0]
-							.split('/')
-							.map((n) => parseInt(n))
-							.join('/') as DayValue | undefined;
-						// if (!day) return;
+		const rawRows = await this.extractRawRows(page);
+		const dayHashMap = this.buildDayHashMap(rawRows);
 
-						// const hours = extractHoursValueFromRow(row);
-						const dayHoursInputs = row.querySelectorAll(
-							'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
-						);
-
-						// if (dayHoursInputs?.length !== 2) {
-						// 	throw new Error(`couldnt scrape hours from row ${row.id}, didn't find both inputs`);
-						// }
-
-						const hours = (Array.from(dayHoursInputs) as HTMLInputElement[]).map(
-							(inpt) => inpt.value,
-						) as Hour[];
-						// if (hours.length != 2) {
-						// 	throw new Error(`couldnt scrape hours from row ${row.id}, not properly formatted`);
-						// }
-						// dayHashMap[day] ??= [];
-						// dayHashMap[day].push({
-						// 	in: hours[0],
-						// 	out: hours[1],
-						// });
-
-						return { day, hours };
-					})
-					.filter(({ day, hours }) => !!day && !!hours)
-					.reduce(
-						(p, c) => {
-							if (c?.day) {
-								p[c.day] ??= [];
-								p[c.day].push({
-									in: c.hours[0],
-									out: c.hours[1],
-								});
-							}
-							return p;
-						},
-						{} as Record<DayValue, DayHours[]>, // Prepare for split days support;)
-					),
-		);
-		// console.log({ dayHashMap });
-		return Object.entries(dayHashMap).map((entry) => ({
-			dayValue: entry[0] as DayValue,
-			hours: entry[1][0] as DayHours,
-		}));
-		// return dayArray;
+		return Object.entries(dayHashMap).map(([dayValue, hours]) => {
+			const resolvedHours = this.resolveHoursForDay(hours);
+			return {
+				dayValue: dayValue as DayValue,
+				hours: resolvedHours,
+			};
+		});
 	}
 
-	// private hasEmptyInput(element: HTMLElement): boolean {
-	// 	const anyEmpty = element.querySelector('input:not([value])');
-	// 	return Boolean(anyEmpty);
-	// }
-
-	private validateConfigValues() {
+	protected validateConfigValues() {
 		if (this.config.dayModifiersSupport.sickDays) {
 			throw new UnsupportedConfigError('sick days scraping are not currently supported');
 		}
@@ -170,28 +118,63 @@ export class HilanScraper extends Scraper {
 		}
 	}
 
-	// private extractDayValueFromRow(row: HTMLTableRowElement): DayValue | undefined {
-	// 	return row.children[0].textContent?.split(' ')[0].split('/').map(parseInt).join('/') as
-	// 		| DayValue
-	// 		| undefined;
-	// }
+	private async extractRawRows(page: Page): Promise<RawDayRow[]> {
+		let rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry]';
 
-	// private extractHoursValueFromRow(row: HTMLTableRowElement): DayHours {
-	// 	const dayHoursInputs = row.querySelectorAll(
-	// 		'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
-	// 	);
-	// 	if (dayHoursInputs?.length !== 2) {
-	// 		throw new ScrapingError(`couldnt scrape hours from row ${row.id}, didn't find both inputs`);
-	// 	}
-	// 	const hours = (Array.from(dayHoursInputs) as HTMLInputElement[])
-	// 		.map((inpt) => inpt.value)
-	// 		.filter(stringIsHourBase);
-	// 	if (hours.length != 2) {
-	// 		throw new ScrapingError(`couldnt scrape hours from row ${row.id}, not properly formatted`);
-	// 	}
-	// 	return {
-	// 		in: hours[0],
-	// 		out: hours[1],
-	// 	};
-	// }
+		// ignore rows with empty values, config does not support any other behavior at the moment
+		if (!this.config.dayModifiersSupport.sickDays && !this.config.dayModifiersSupport.vacation) {
+			rowSelector += ' input[value]';
+		}
+
+		rowSelector += ')';
+		return page.$$eval(rowSelector, (rows) =>
+			rows.map((row) => {
+				const day = row.children[0]?.textContent
+					?.split(' ')[0]
+					.split('/')
+					.map((n) => parseInt(n))
+					.join('/') as DayValue | undefined;
+
+				const hours = Array.from(
+					row.querySelectorAll<HTMLInputElement>(
+						'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
+					),
+				).map((i) => i.value as Hour);
+
+				return { day, hours };
+			}),
+		);
+	}
+
+	private buildDayHashMap(rows: RawDayRow[]): Record<DayValue, DayHours[]> {
+		return rows.reduce(
+			(dayHashMap, row) => {
+				if (row.day) {
+					if (row.hours.length !== 2) {
+						throw new ScrapingError(`Invalid hours for day ${row.day}`);
+					}
+
+					const [inHour, outHour] = row.hours;
+
+					if (!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) {
+						throw new ScrapingError(`Malformed hour for day ${row.day}`);
+					}
+
+					dayHashMap[row.day] ??= [];
+					dayHashMap[row.day].push({ in: inHour, out: outHour });
+				}
+
+				return dayHashMap;
+			},
+			{} as Record<DayValue, DayHours[]>,
+		);
+	}
+
+	private resolveHoursForDay(hours: DayHours[]): DayHours {
+		if (this.config.dayModifiersSupport.splitDays) {
+			unsupportedConfigError('feature not implemented');
+		}
+
+		return hours[0];
+	}
 }

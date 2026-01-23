@@ -4,6 +4,7 @@ import { Day } from '../types/hours';
 
 export abstract class Scraper {
 	protected abstract readonly INITIAL_URL: string;
+	protected abstract readonly config: Record<string, unknown>;
 	private async _page() {
 		const browser = await connect();
 		return await browser.newPage();
@@ -21,4 +22,5 @@ export abstract class Scraper {
 	abstract getDays(): Promise<Day[]>;
 	protected abstract handleLogin(page: Page): Promise<void>;
 	protected abstract navigateToHoursLog(page: Page): Promise<void>;
+	protected abstract validateConfigValues(): void;
 }
