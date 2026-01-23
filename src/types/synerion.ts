@@ -1,10 +1,10 @@
-export type SynerionResponse = {
+export interface SynerionResponse {
 	DailyBrowserDtos: SynerionDayDTO[];
 
 	LoanedCount: 0;
 	TotalCount: 19;
 }
-export type SynerionDayDTO = {
+export interface SynerionDayDTO {
 	EmployeeId: string;
 	UniqueId: number;
 	Date: string;
@@ -99,36 +99,36 @@ export type SynerionDayDTO = {
 	OndutyEshel: OndutyEshel;
 }
 
-export type InOut = {
+export interface InOut {
 	In: In;
 	Out: Out;
 	Duration: unknown;
 	ReportingCode: ReportingCode;
 }
 
-export type In = {
+export interface In {
 	Time: string;
 	AuditIndicatorType: number;
 }
 
-export type Out = {
+export interface Out {
 	Time: string;
 	AuditIndicatorType: number;
 }
 
-export type ReportingCode = {
+export interface ReportingCode {
 	Code: string;
 	Color: string;
 	AuditIndicatorType: number;
 }
 
-export type ReadonlyRecord = {
+export interface ReadonlyRecord {
 	IsReadonly: boolean;
 	ReasonKey: number;
 	Reason: unknown;
 }
 
-export type OndutyEshel = {
+export interface OndutyEshel {
 	AttendanceId: unknown;
 	HotelCost: number;
 	UrbanPublicTransport: number;

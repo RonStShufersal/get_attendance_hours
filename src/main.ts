@@ -1,7 +1,8 @@
 import { automateWebtimeHoursEntry } from './automators/webtime';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
 import scrapeError from './errors/ScrapingError';
-import { getDaysFromHilan } from './scrapers/hilan';
+import { UnsupportedTargetError } from './errors/UnsupportedError';
+import { HilanScraper } from './scrapers/impl/HilanScraper';
 import { getDaysFromSynerion } from './scrapers/synerion';
 import { Day } from './types/hours';
 
@@ -55,14 +56,18 @@ async function populateDaysFromSynerion(days: Day[]) {
 }
 
 async function populateDaysFromHilan(days: Day[]) {
-	const response = await getDaysFromHilan();
+	const scraper = new HilanScraper();
+	const response = await scraper.getDays();
 	if (!response?.length) {
-		scrapeError('No days scraped from synerion');
+		scrapeError('No days scraped from hilan');
 	}
 	days.push(...response);
 }
 
 function validateAllEnvVariablesExist() {
+	if (process.env.AUTOMATION_TARGET !== 'webtime') {
+		throw new UnsupportedTargetError('target is not "webtime"');
+	}
 	const username = process.env.WEBTIME_USERNAME;
 	const password = process.env.WEBTIME_PASSWORD;
 

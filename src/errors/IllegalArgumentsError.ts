@@ -5,5 +5,5 @@ export class IllegalArgumentError extends Error {
 	}
 }
 export default function illegalArgumentError(message?: string): never {
-	throw new IllegalArgumentError(message);
+	throw new IllegalArgumentError(message ?? 'illegal argument/s provided');
 }
