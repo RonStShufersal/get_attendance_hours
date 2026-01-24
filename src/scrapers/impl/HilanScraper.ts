@@ -198,7 +198,7 @@ export class HilanScraper extends Scraper {
 		}
 
 		return {
-			hours: hours[0],
+			hours: { in: hours[0].in, out: hours[0].out },
 			modifier: hours[0].modifier,
 		};
 	}
