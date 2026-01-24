@@ -4,11 +4,18 @@ export type DayValue = `${ValidDay}/${ValidMonth}`;
 export interface Day {
 	dayValue: DayValue;
 	hours: DayHours;
+	isVacation?: boolean;
+	isSickDay?: boolean;
 }
 
 export interface DayHours {
 	in: Hour;
 	out: Hour;
+}
+
+export interface DayHoursWithDayModifier extends DayHours {
+	isVacation: boolean;
+	isSickDay: boolean;
 }
 
 export type ValidDay =

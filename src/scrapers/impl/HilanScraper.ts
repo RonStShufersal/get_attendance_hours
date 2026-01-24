@@ -1,4 +1,4 @@
-import { Day, DayHours, DayValue, Hour } from '../../types/hours';
+import { Day, DayHoursWithDayModifier, DayValue, Hour } from '../../types/hours';
 import { Scraper } from '../Scraper';
 import { getCredentials } from '../../util/getCredentials';
 import { DefaultLoginStrategy } from '../util/impl/DefaultLoginStrategy';
@@ -8,7 +8,7 @@ import { Page } from 'puppeteer';
 import formAutomationError from '../../errors/FormAutomationError';
 import scrapeError, { ScrapingError } from '../../errors/ScrapingError';
 import { unsupportedConfigError, UnsupportedConfigError } from '../../errors/UnsupportedError';
-import { RawDayRow } from '../types/CommonScrapingTypes';
+import { DayModifiers, RawDayRow } from '../types/CommonScrapingTypes';
 import { stringIsHourBase } from '../../util/typeChecks';
 
 export class HilanScraper extends Scraper {
@@ -16,7 +16,7 @@ export class HilanScraper extends Scraper {
 
 	protected readonly config = {
 		dayModifiersSupport: {
-			vacation: false,
+			vacation: true,
 			sickDays: false,
 			splitDays: false,
 		},
@@ -30,6 +30,10 @@ export class HilanScraper extends Scraper {
 		await this.prepareHoursLogPageForScraping(page);
 		const days = await this.scrapeDays(page);
 		console.log({ days });
+
+		// dispose of opened page
+		await page.close();
+
 		return days;
 	}
 
@@ -88,6 +92,10 @@ export class HilanScraper extends Scraper {
 			await element.click();
 		}
 
+		// unmark current day, as the empty value can break next functions.
+		// when supporting split days, current day might interest us - but for now we ignore them.
+		await page.click('.currentDay');
+
 		await page.click('input[id*=RefreshSelectedDays]');
 
 		await page.waitForNetworkIdle();
@@ -97,84 +105,125 @@ export class HilanScraper extends Scraper {
 		const rawRows = await this.extractRawRows(page);
 		const dayHashMap = this.buildDayHashMap(rawRows);
 
-		return Object.entries(dayHashMap).map(([dayValue, hours]) => {
-			const resolvedHours = this.resolveHoursForDay(hours);
+		let normalizedDays = Object.entries(dayHashMap).map(([dayValue, hours]): Day => {
+			const resolvedHours = this.resolveHoursAndModifiersForDay(hours);
 			return {
 				dayValue: dayValue as DayValue,
-				hours: resolvedHours,
+				hours: resolvedHours.hours,
+				isSickDay: resolvedHours.isSickDay,
+				isVacation: resolvedHours.isVacation,
 			};
 		});
+
+		if (!this.config.dayModifiersSupport.sickDays) {
+			normalizedDays = normalizedDays.filter((day) => !day.isSickDay);
+		}
+
+		if (!this.config.dayModifiersSupport.vacation) {
+			normalizedDays = normalizedDays.filter((day) => !day.isVacation);
+		}
+
+		return normalizedDays;
 	}
 
 	protected validateConfigValues() {
 		if (this.config.dayModifiersSupport.sickDays) {
-			throw new UnsupportedConfigError('sick days scraping are not currently supported');
+			console.log('hilan will scrape sick days');
 		}
 		if (this.config.dayModifiersSupport.splitDays) {
 			throw new UnsupportedConfigError('split days scraping are not currently supported');
 		}
 		if (this.config.dayModifiersSupport.vacation) {
-			throw new UnsupportedConfigError('vacation days scraping are not currently supported');
+			console.log('hilan will scrape vacation days');
 		}
 	}
 
 	private async extractRawRows(page: Page): Promise<RawDayRow[]> {
-		let rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry]';
+		const rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry])';
 
-		// ignore rows with empty values, config does not support any other behavior at the moment
-		if (!this.config.dayModifiersSupport.sickDays && !this.config.dayModifiersSupport.vacation) {
-			rowSelector += ' input[value]';
-		}
-
-		rowSelector += ')';
 		return page.$$eval(rowSelector, (rows) =>
-			rows.map((row) => {
+			rows.map((row): RawDayRow => {
 				const day = row.children[0]?.textContent
 					?.split(' ')[0]
 					.split('/')
 					.map((n) => parseInt(n))
 					.join('/') as DayValue | undefined;
 
+				// current implementation assumes only 1 pair of inputs (entry and exit)
+				// split days can return 2+, but it will always be (even=entry, odd=exit)
 				const hours = Array.from(
 					row.querySelectorAll<HTMLInputElement>(
 						'td[id*=cellOf_ManualEntry] input, td[id*=cellOf_ManualExit] input',
 					),
 				).map((i) => i.value as Hour);
 
-				return { day, hours };
+				return { day, hours, selectElementTitle: row.querySelector('select')?.title };
 			}),
 		);
 	}
 
-	private buildDayHashMap(rows: RawDayRow[]): Record<DayValue, DayHours[]> {
+	private buildDayHashMap(rows: RawDayRow[]): Record<DayValue, DayHoursWithDayModifier[]> {
 		return rows.reduce(
 			(dayHashMap, row) => {
 				if (row.day) {
+					// split days incompatibility
 					if (row.hours.length !== 2) {
 						throw new ScrapingError(`Invalid hours for day ${row.day}`);
 					}
 
+					// split days incompatibility
 					const [inHour, outHour] = row.hours;
+					const dayModifier = this.resolveSelectTitle(row.selectElementTitle);
 
-					if (!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) {
+					// add support for vacation/sick days
+					if ((!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) && dayModifier === null) {
 						throw new ScrapingError(`Malformed hour for day ${row.day}`);
 					}
 
 					dayHashMap[row.day] ??= [];
-					dayHashMap[row.day].push({ in: inHour, out: outHour });
+					dayHashMap[row.day].push({
+						in: inHour,
+						out: outHour,
+						isSickDay: dayModifier === DayModifiers.SICK_DAY,
+						isVacation: dayModifier === DayModifiers.VACATION,
+					});
 				}
 
 				return dayHashMap;
 			},
-			{} as Record<DayValue, DayHours[]>,
+			{} as Record<DayValue, DayHoursWithDayModifier[]>,
 		);
 	}
 
-	private resolveHoursForDay(hours: DayHours[]): DayHours {
+	private resolveHoursAndModifiersForDay(hours: DayHoursWithDayModifier[]): Omit<Day, 'dayValue'> {
 		if (this.config.dayModifiersSupport.splitDays) {
 			unsupportedConfigError('feature not implemented');
 		}
 
-		return hours[0];
+		return {
+			hours: hours[0],
+			isSickDay: hours[0].isSickDay,
+			isVacation: hours[0].isVacation,
+		};
+	}
+
+	private resolveSelectTitle(value?: string): DayModifiers | null {
+		if (this.normalizeHebrew(value) === this.normalizeHebrew('מחלה')) {
+			return DayModifiers.SICK_DAY;
+		}
+
+		if (this.normalizeHebrew(value) === this.normalizeHebrew('חופשה')) {
+			return DayModifiers.VACATION;
+		}
+
+		return null;
+	}
+
+	private normalizeHebrew(str?: string): string {
+		return (str ?? '')
+			.normalize('NFKC') // normalize Unicode variants
+			.replace(/\p{P}+/gu, '') // remove all punctuation (Unicode-safe)
+			.replace(/\s+/g, ' ') // normalize whitespace (optional)
+			.trim();
 	}
 }
