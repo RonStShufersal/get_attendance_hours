@@ -110,17 +110,16 @@ export class HilanScraper extends Scraper {
 			return {
 				dayValue: dayValue as DayValue,
 				hours: resolvedHours.hours,
-				isSickDay: resolvedHours.isSickDay,
-				isVacation: resolvedHours.isVacation,
+				modifier: resolvedHours.modifier,
 			};
 		});
 
 		if (!this.config.dayModifiersSupport.sickDays) {
-			normalizedDays = normalizedDays.filter((day) => !day.isSickDay);
+			normalizedDays = normalizedDays.filter((day) => day.modifier !== DayModifiers.SICK_DAY);
 		}
 
 		if (!this.config.dayModifiersSupport.vacation) {
-			normalizedDays = normalizedDays.filter((day) => !day.isVacation);
+			normalizedDays = normalizedDays.filter((day) => day.modifier !== DayModifiers.VACATION);
 		}
 
 		return normalizedDays;
@@ -175,7 +174,6 @@ export class HilanScraper extends Scraper {
 					const [inHour, outHour] = row.hours;
 					const dayModifier = this.resolveSelectTitle(row.selectElementTitle);
 
-					// add support for vacation/sick days
 					if ((!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) && dayModifier === null) {
 						throw new ScrapingError(`Malformed hour for day ${row.day}`);
 					}
@@ -184,8 +182,7 @@ export class HilanScraper extends Scraper {
 					dayHashMap[row.day].push({
 						in: inHour,
 						out: outHour,
-						isSickDay: dayModifier === DayModifiers.SICK_DAY,
-						isVacation: dayModifier === DayModifiers.VACATION,
+						modifier: dayModifier,
 					});
 				}
 
@@ -202,8 +199,7 @@ export class HilanScraper extends Scraper {
 
 		return {
 			hours: hours[0],
-			isSickDay: hours[0].isSickDay,
-			isVacation: hours[0].isVacation,
+			modifier: hours[0].modifier,
 		};
 	}
 

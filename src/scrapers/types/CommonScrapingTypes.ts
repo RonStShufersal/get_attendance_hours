@@ -6,14 +6,7 @@ export interface RawDayRow {
 	selectElementTitle?: string;
 }
 
-export interface RawDayRowWithDayModifier {
-	day?: DayValue;
-	hours: Hour[];
-	isVacation: boolean;
-	isSickDay: boolean;
-}
-
 export enum DayModifiers {
-	SICK_DAY,
-	VACATION,
+	SICK_DAY = 'sickDay',
+	VACATION = 'vacation',
 }

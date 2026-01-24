@@ -1,11 +1,12 @@
+import { DayModifiers } from '../scrapers/types/CommonScrapingTypes';
+
 export type Hour = `${number}:${number}`;
 export type DayValue = `${ValidDay}/${ValidMonth}`;
 
 export interface Day {
 	dayValue: DayValue;
 	hours: DayHours;
-	isVacation?: boolean;
-	isSickDay?: boolean;
+	modifier: DayModifiers | null;
 }
 
 export interface DayHours {
@@ -14,8 +15,7 @@ export interface DayHours {
 }
 
 export interface DayHoursWithDayModifier extends DayHours {
-	isVacation: boolean;
-	isSickDay: boolean;
+	modifier: DayModifiers | null;
 }
 
 export type ValidDay =
