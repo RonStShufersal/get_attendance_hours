@@ -10,8 +10,8 @@ const webtimeLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.ad
 const WEBTIME_DAYS_TABLE_ID = 'tableDyn1';
 
 export async function automateWebtimeHoursEntry(days: Day[]) {
-	const username = process.env.WEBTIME_USERNAME;
-	const password = process.env.WEBTIME_PASSWORD;
+	const username = process.env.AUTOMATOR_USERNAME;
+	const password = process.env.AUTOMATOR_PASSWORD;
 
 	if (!username || !password) {
 		throw new Error('Missing for webtime automator: username or password');
@@ -60,7 +60,6 @@ async function handleLogin(page: Page, credentials: { username: string; password
 }
 
 async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
-	console.log(days);
 
 	const button = await page.$('#save_btn');
 
@@ -90,7 +89,7 @@ async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
 
 	await button.click();
 
-	await page.waitForNetworkIdle({ idleTime: 1000 });
+	await page.waitForNetworkIdle({ idleTime: 3000 });
 
 	await new Promise((res) => setTimeout(res, 100 * 10 * 1000));
 }

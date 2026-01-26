@@ -3,10 +3,10 @@ declare namespace NodeJS {
 		SCRAPING_TARGET?: 'synerion' | 'hilan';
 		AUTOMATION_TARGET?: 'webtime';
 
-		WEBTIME_USERNAME?: string;
-		WEBTIME_PASSWORD?: string;
+		AUTOMATOR_USERNAME?: string;
+		AUTOMATOR_PASSWORD?: string;
 
-		HILAN_USERNAME?: string;
-		HILAN_PASSWORD?: string;
+		SCRAPER_USERNAME?: string;
+		SCRAPER_PASSWORD?: string;
 	}
 }
