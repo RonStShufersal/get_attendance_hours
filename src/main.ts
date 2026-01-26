@@ -68,10 +68,10 @@ function validateAllEnvVariablesExist() {
 	if (process.env.AUTOMATION_TARGET !== 'webtime') {
 		throw new UnsupportedTargetError('target is not "webtime"');
 	}
-	const username = process.env.WEBTIME_USERNAME;
-	const password = process.env.WEBTIME_PASSWORD;
+	const username = process.env.SCRAPER_USERNAME;
+	const password = process.env.SCRAPER_PASSWORD;
 
 	if (!username || !password) {
-		missingEnvironmentError('Missing env variables: WEBTIME_USERNAME or WEBTIME_PASSWORD');
+		missingEnvironmentError('Missing env variables: SCRAPER_USERNAME or SCRAPER_PASSWORD');
 	}
 }
