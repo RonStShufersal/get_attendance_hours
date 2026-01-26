@@ -1,4 +1,4 @@
-import { DayValue, Hour } from '../../types/hours';
+import { DayValue, Hour } from './HourDay';
 
 export interface RawDayRow {
 	day?: DayValue;
@@ -6,7 +6,8 @@ export interface RawDayRow {
 	selectElementTitle?: string;
 }
 
-export enum DayModifiers {
+export enum DayType {
 	SICK_DAY = 'sickDay',
 	VACATION = 'vacation',
+	REGULAR = 'regular',
 }

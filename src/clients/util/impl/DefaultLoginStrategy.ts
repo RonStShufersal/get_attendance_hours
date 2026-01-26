@@ -1,9 +1,9 @@
 import { Page } from 'puppeteer';
 import { LoginStrategy } from '../LoginStrategy';
-import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
 import illegalArgumentError from '../../../errors/IllegalArgumentsError';
 import formAutomationError from '../../../errors/FormAutomationError';
 import { fillInputById, fillInputByName, FillInputOptions } from '../../../util/fillInput';
+import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
 
 export class DefaultLoginStrategy implements LoginStrategy {
 	page: Page;
@@ -43,19 +43,19 @@ export class DefaultLoginStrategy implements LoginStrategy {
 		if (input.inputValue instanceof Date) {
 			input.inputValue = input.inputValue.toISOString();
 		}
-		const functionPayload: FillInputOptions = {
+		const opts: FillInputOptions = {
 			inputSelector: input.inputSelector.rawSelector,
 			inputValue: String(input.inputValue),
-			errorMsg: input.errorMsg || 'couldnt fill input',
+			errorMsg: input.errorMsg || `couldnt fill ${input.inputSelector.rawSelector} input`,
 			page: this.page,
 		};
 
 		switch (input.inputSelector.lookupStrategy) {
 			case SelectorLookupStrategy.BY_ID:
-				await fillInputById(functionPayload);
+				await fillInputById(opts);
 				break;
 			case SelectorLookupStrategy.BY_INPUT_NAME:
-				await fillInputByName(functionPayload);
+				await fillInputByName(opts);
 				break;
 
 			default:

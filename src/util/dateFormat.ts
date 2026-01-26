@@ -1,8 +1,12 @@
-import { DayValue } from '../types/hours';
+import { DayValue } from '../clients/types/HourDay';
 
 export function dateFormat(date?: Date | number): DayValue {
 	return new Intl.DateTimeFormat('fr', {
 		day: 'numeric',
 		month: '2-digit',
-	}).format(date).split('/').map(n => '' + +n).join('/') as DayValue;
+	})
+		.format(date)
+		.split('/')
+		.map((n) => '' + +n)
+		.join('/') as DayValue;
 }

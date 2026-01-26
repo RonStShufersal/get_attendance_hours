@@ -1,4 +1,4 @@
-import { DayModifiers } from '../scrapers/types/CommonScrapingTypes';
+import { DayType } from './CommonTypes';
 
 export type Hour = `${number}:${number}`;
 export type DayValue = `${ValidDay}/${ValidMonth}`;
@@ -6,7 +6,7 @@ export type DayValue = `${ValidDay}/${ValidMonth}`;
 export interface Day {
 	dayValue: DayValue;
 	hours: DayHours;
-	modifier: DayModifiers | null;
+	dayType: DayType | null;
 }
 
 export interface DayHours {
@@ -14,8 +14,8 @@ export interface DayHours {
 	out: Hour;
 }
 
-export interface DayHoursWithDayModifier extends DayHours {
-	modifier: DayModifiers | null;
+export interface DayHoursWithDayType extends DayHours {
+	dayType: DayType | null;
 }
 
 export type ValidDay =

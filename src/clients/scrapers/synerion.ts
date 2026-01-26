@@ -1,11 +1,12 @@
 import { HTTPResponse } from 'puppeteer';
-import { connect } from '../connect';
-import { Day, Hour } from '../types/hours';
-import { SynerionDayDTO, SynerionResponse } from '../types/synerion';
-import { stringIsHourBase } from '../util/typeChecks';
-import scrapeError from '../errors/ScrapingError';
-import { dateFormat } from '../util/dateFormat';
-import { isTimeInExpectedRanges } from '../util/validators';
+import { connect } from '../../connect';
+import scrapeError from '../../errors/ScrapingError';
+import { Day, Hour } from '../types/HourDay';
+import { SynerionDayDTO, SynerionResponse } from './types/synerion';
+import { dateFormat } from '../../util/dateFormat';
+import { stringIsHourBase } from '../../util/typeChecks';
+import { isTimeInExpectedRanges } from '../../util/validators';
+import { DayType } from '../types/CommonTypes';
 
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
@@ -68,7 +69,7 @@ function getDaysAndHoursFromSynerionResponse(response: SynerionResponse): Day[] 
 			.map(mapSynerionDayDTOToDay);
 }
 
-function mapSynerionDayDTOToDay(dayDTO: SynerionDayDTO) {
+function mapSynerionDayDTOToDay(dayDTO: SynerionDayDTO): Day {
 	const { Date: day } = dayDTO;
 	const { In, Out } = dayDTO.InOuts[0];
 
@@ -83,5 +84,6 @@ function mapSynerionDayDTOToDay(dayDTO: SynerionDayDTO) {
 			in: inTime,
 			out: outTime,
 		},
+		dayType: DayType.REGULAR,
 	};
 }

@@ -1,10 +1,10 @@
-import { automateWebtimeHoursEntry } from './automators/webtime';
+import { automateWebtimeHoursEntry } from './clients/automators/webtime';
+import { HilanScraper } from './clients/scrapers/impl/HilanScraper';
+import { getDaysFromSynerion } from './clients/scrapers/synerion';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
 import scrapeError from './errors/ScrapingError';
 import { UnsupportedTargetError } from './errors/UnsupportedError';
-import { HilanScraper } from './scrapers/impl/HilanScraper';
-import { getDaysFromSynerion } from './scrapers/synerion';
-import { Day } from './types/hours';
+import { Day } from './clients/types/HourDay';
 
 export async function main() {
 	validateAllEnvVariablesExist();

@@ -1,6 +1,6 @@
 export enum SelectorLookupStrategy {
-	BY_ID,
-	BY_INPUT_NAME,
+	BY_ID = 'byId',
+	BY_INPUT_NAME = 'byInputName',
 }
 
 export interface LoginInputStrategy {

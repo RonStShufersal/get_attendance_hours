@@ -1,10 +1,10 @@
 import { Page } from 'puppeteer';
-import formAutomationError from '../errors/FormAutomationError';
-import { Day } from '../types/hours';
-import { fillInputByName } from '../util/fillInput';
-import { connect } from '../connect';
-import { WebtimeDayHours } from '../types/webtime';
-import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../util/deconstructors';
+import formAutomationError from '../../errors/FormAutomationError';
+import { Day } from '../types/HourDay';
+import { fillInputByName } from '../../util/fillInput';
+import { connect } from '../../connect';
+import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../../util/deconstructors';
+import { WebtimeDayHours } from './types/Webtime';
 
 const webtimeLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
 const WEBTIME_DAYS_TABLE_ID = 'tableDyn1';
@@ -60,7 +60,6 @@ async function handleLogin(page: Page, credentials: { username: string; password
 }
 
 async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
-
 	const button = await page.$('#save_btn');
 
 	if (!button) {
