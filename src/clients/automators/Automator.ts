@@ -1,6 +1,6 @@
-import { Day } from '../types/HourDay';
 import { TimesheetClient } from '../TimesheetClient';
+import { GroupedDays } from '../types/CommonTypes';
 
 export abstract class Automator extends TimesheetClient {
-	abstract fillDays(days: Day[]): Promise<void>;
+	abstract fillDays(days: GroupedDays): Promise<void>;
 }

@@ -5,9 +5,12 @@ import { UnsupportedConfigError } from '../../../errors/UnsupportedError';
 import { getCredentials } from '../../../util/getCredentials';
 import missingCredentialsError from '../../../errors/MissingCredentialsError';
 import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
-import { DefaultLoginStrategy } from '../../util/impl/DefaultLoginStrategy';
+import { DefaultLoginStrategy } from '../../strategies/login/impl/DefaultLoginStrategy';
 import formAutomationError from '../../../errors/FormAutomationError';
-import { DayType } from '../../types/CommonTypes';
+import { DayType, GroupedDays } from '../../types/CommonTypes';
+import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../../../util/deconstructors';
+import { WebtimeDayHours } from '../types/Webtime';
+import { fillInputByName } from '../../../util/fillInput';
 
 export class WebtimeAutomator extends Automator {
 	protected INITIAL_URL = 'https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp';
@@ -26,7 +29,7 @@ export class WebtimeAutomator extends Automator {
 		[DayType.VACATION]: '512',
 	};
 
-	async fillDays(days: Day[]): Promise<void> {
+	async fillDays(days: GroupedDays): Promise<void> {
 		this.validateConfigValues();
 		const page = await super.page;
 		await this.handleLogin(page);
@@ -72,10 +75,33 @@ export class WebtimeAutomator extends Automator {
 		return;
 	}
 
-	protected async fillTimesheet(page: Page, days: Day[]): Promise<void> {
+	protected async fillTimesheet(page: Page, days: GroupedDays): Promise<void> {
 		await this.selectAssignmentValue(page, DayType.REGULAR);
 
-		days.map((a) => a);
+		const regular = days[DayType.REGULAR];
+
+		for (const day of regular) {
+			const tr = await page.$(this.getTrannySelector(day));
+			if (!tr) {
+				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
+			}
+
+			// fill mission
+			await this.fillMissionInput(page, day);
+
+			await this.handleFillHourInputsStartAndEnd(page, day);
+		}
+		const button = await page.$('#save_btn');
+
+		if (!button) {
+			formAutomationError('couldnt find save button');
+		}
+
+		await button.click();
+
+		await page.waitForNetworkIdle({ idleTime: 3000 });
+
+		await new Promise((res) => setTimeout(res, 100 * 10 * 1000));
 		return;
 	}
 
@@ -91,6 +117,40 @@ export class WebtimeAutomator extends Automator {
 		}
 	}
 
+	private async handleFillHourInputsStartAndEnd(page: Page, day: Day) {
+		const { start, end } = this.getHoursSelectors(day);
+
+		const hourIn = String(getHourFromHours(day.hours.in));
+		const minuteIn = String(getMinutesFromHours(day.hours.in));
+
+		const hourOut = String(getHourFromHours(day.hours.out));
+		const minuteOut = String(getMinutesFromHours(day.hours.out));
+
+		const defaultOptions = { page, earlyReturnOnNonEmpty: true };
+
+		await fillInputByName({
+			...defaultOptions,
+			inputSelector: start.hour,
+			inputValue: hourIn,
+		});
+		await fillInputByName({
+			...defaultOptions,
+			inputSelector: start.minute,
+			inputValue: minuteIn,
+		});
+
+		await fillInputByName({
+			...defaultOptions,
+			inputSelector: end.hour,
+			inputValue: hourOut,
+		});
+		await fillInputByName({
+			...defaultOptions,
+			inputSelector: end.minute,
+			inputValue: minuteOut,
+		});
+	}
+
 	private async selectAssignmentValue(page: Page, dayType: DayType) {
 		const selectElement = await page.$('#assignments');
 
@@ -99,5 +159,39 @@ export class WebtimeAutomator extends Automator {
 		}
 
 		await selectElement.select(this.dayType2DescriptorRawValue[dayType]);
+	}
+
+	private async fillMissionInput(page: Page, day: Day, forceFill = false) {
+		const missionInput = await page.$(this.getTrannySelector(day) + ' input[fieldname="assignment_name"] ');
+
+		if (!missionInput) {
+			formAutomationError('couldnt find mission input');
+		}
+
+		const currentValue = await missionInput.evaluate((input) => (input as HTMLInputElement).value);
+
+		if (currentValue && !forceFill) {
+			return;
+		}
+
+		await missionInput.click();
+	}
+
+	private getTrannySelector(day: Day): string {
+		return `#tableDyn1 tr[row_no="${getDayFromDayType(day)}"]`;
+	}
+
+	private getHoursSelectors(day: Day): WebtimeDayHours {
+		const dayNumber = getDayFromDayType(day);
+		return {
+			start: {
+				hour: `time_start_HH_${dayNumber}`,
+				minute: `time_start_MM_${dayNumber}`,
+			},
+			end: {
+				hour: `time_end_HH_${dayNumber}`,
+				minute: `time_end_MM_${dayNumber}`,
+			},
+		};
 	}
 }

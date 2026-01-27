@@ -1,16 +1,16 @@
 import { Page } from 'puppeteer';
 import { LoginStrategy } from '../LoginStrategy';
-import illegalArgumentError from '../../../errors/IllegalArgumentsError';
-import formAutomationError from '../../../errors/FormAutomationError';
-import { fillInputById, fillInputByName, FillInputOptions } from '../../../util/fillInput';
-import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
+import illegalArgumentError from '../../../../errors/IllegalArgumentsError';
+import formAutomationError from '../../../../errors/FormAutomationError';
+import { fillInputById, fillInputByName, FillInputOptions } from '../../../../util/fillInput';
+import { LoginInputStrategy, SelectorLookupStrategy } from '../../../types/LoginInputStrategy';
 
 export class DefaultLoginStrategy implements LoginStrategy {
-	page: Page;
-	expectedInputs: LoginInputStrategy[];
-	loginUrl: string;
-
-	constructor(page: Page, expectedInputs: LoginInputStrategy[], loginUrl: string) {
+	constructor(
+		private readonly page: Page,
+		private readonly expectedInputs: LoginInputStrategy[],
+		private readonly loginUrl: string,
+	) {
 		this.page = page;
 		this.expectedInputs = expectedInputs;
 		this.loginUrl = loginUrl;

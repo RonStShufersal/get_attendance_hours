@@ -5,11 +5,12 @@ import { fillInputByName } from '../../util/fillInput';
 import { connect } from '../../connect';
 import { getHourFromHours, getMinutesFromHours, getDayFromDayType } from '../../util/deconstructors';
 import { WebtimeDayHours } from './types/Webtime';
+import { DayType, GroupedDays } from '../types/CommonTypes';
 
 const webtimeLogin = `https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp`;
 const WEBTIME_DAYS_TABLE_ID = 'tableDyn1';
 
-export async function automateWebtimeHoursEntry(days: Day[]) {
+export async function automateWebtimeHoursEntry(days: GroupedDays) {
 	const username = process.env.AUTOMATOR_USERNAME;
 	const password = process.env.AUTOMATOR_PASSWORD;
 
@@ -59,7 +60,7 @@ async function handleLogin(page: Page, credentials: { username: string; password
 	await page.waitForNavigation({ waitUntil: 'networkidle2' });
 }
 
-async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
+async function fillOutWebtimeHoursAndSubmit(page: Page, days: GroupedDays) {
 	const button = await page.$('#save_btn');
 
 	if (!button) {
@@ -68,7 +69,9 @@ async function fillOutWebtimeHoursAndSubmit(page: Page, days: Day[]) {
 
 	await chooseWebtimeAssignment(page);
 
-	for (const day of days) {
+	const regularDays = days[DayType.REGULAR];
+
+	for (const day of regularDays) {
 		try {
 			const tr = await page.$(getTrannySelector(day));
 			if (!tr) {

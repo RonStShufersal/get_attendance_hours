@@ -1,9 +1,8 @@
-import { DayValue, Hour } from './HourDay';
+import { Day, DayValue, Hour } from './HourDay';
 
 export interface RawDayRow {
 	day?: DayValue;
 	hours: Hour[];
-	selectElementTitle?: string;
 }
 
 export enum DayType {
@@ -11,3 +10,5 @@ export enum DayType {
 	VACATION = 'vacation',
 	REGULAR = 'regular',
 }
+
+export type GroupedDays = Record<DayType, Day[]>;

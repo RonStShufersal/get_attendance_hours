@@ -4,12 +4,13 @@ import { Day, DayHoursWithDayType, DayValue, Hour } from '../../types/HourDay';
 import { getCredentials } from '../../../util/getCredentials';
 import { Scraper } from '../Scraper';
 import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
-import { DefaultLoginStrategy } from '../../util/impl/DefaultLoginStrategy';
+import { DefaultLoginStrategy } from '../../strategies/login/impl/DefaultLoginStrategy';
 import formAutomationError from '../../../errors/FormAutomationError';
 import scrapeError, { ScrapingError } from '../../../errors/ScrapingError';
 import { UnsupportedConfigError, unsupportedConfigError } from '../../../errors/UnsupportedError';
 import { stringIsHourBase } from '../../../util/typeChecks';
-import { DayType, RawDayRow } from '../../types/CommonTypes';
+import { DayType } from '../../types/CommonTypes';
+import { RawDayRowHilan } from '../types/Hilan';
 
 export class HilanScraper extends Scraper {
 	protected readonly INITIAL_URL: string = 'https://shufersal.net.hilan.co.il/login';
@@ -137,11 +138,11 @@ export class HilanScraper extends Scraper {
 		}
 	}
 
-	private async extractRawRows(page: Page): Promise<RawDayRow[]> {
+	private async extractRawRows(page: Page): Promise<RawDayRowHilan[]> {
 		const rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry])';
 
 		return page.$$eval(rowSelector, (rows) =>
-			rows.map((row): RawDayRow => {
+			rows.map((row): RawDayRowHilan => {
 				const day = row.children[0]?.textContent
 					?.split(' ')[0]
 					.split('/')
@@ -161,7 +162,7 @@ export class HilanScraper extends Scraper {
 		);
 	}
 
-	private buildDayHashMap(rows: RawDayRow[]): Record<DayValue, DayHoursWithDayType[]> {
+	private buildDayHashMap(rows: RawDayRowHilan[]): Record<DayValue, DayHoursWithDayType[]> {
 		return rows.reduce(
 			(dayHashMap, row) => {
 				if (row.day) {
@@ -203,7 +204,7 @@ export class HilanScraper extends Scraper {
 		};
 	}
 
-	private resolveSelectTitle(value?: string): DayType | null {
+	private resolveSelectTitle(value?: string): DayType {
 		if (this.normalizeHebrew(value) === this.normalizeHebrew('מחלה')) {
 			return DayType.SICK_DAY;
 		}
