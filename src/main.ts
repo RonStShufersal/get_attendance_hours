@@ -7,14 +7,12 @@ export async function main() {
 	validateAllEnvVariablesExist();
 
 	const scraper = new DefaultScrapingOrchestrator();
-	const days = await scraper.scrapeDays();
+	const days = await scraper.orchestrateDayScraping();
 
 	const grouped = day2GroupedDays(days);
 
 	const automator = new DefaultAutomatingOrchestrator();
-	await automator.fillDays(grouped);
-
-	console.log('operation success!');
+	await automator.orchestrateDayAutomation(grouped);
 }
 
 function validateAllEnvVariablesExist() {

@@ -7,7 +7,7 @@ export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
 		super('automator');
 	}
 
-	async fillDays(days: GroupedDays): Promise<void> {
+	async orchestrateDayAutomation(days: GroupedDays): Promise<void> {
 		const target = this.target;
 		switch (target) {
 			case 'webtime':

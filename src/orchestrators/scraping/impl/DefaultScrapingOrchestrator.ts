@@ -9,7 +9,7 @@ export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
 		super('scraper');
 	}
 
-	async scrapeDays(): Promise<Day[]> {
+	async orchestrateDayScraping(): Promise<Day[]> {
 		const target = this.target;
 
 		let days: Day[];

@@ -75,22 +75,29 @@ export class WebtimeAutomator extends Automator {
 		return;
 	}
 
-	protected async fillTimesheet(page: Page, days: GroupedDays): Promise<void> {
-		await this.selectAssignmentValue(page, DayType.REGULAR);
-
-		const regular = days[DayType.REGULAR];
-
-		for (const day of regular) {
-			const tr = await page.$(this.getTrannySelector(day));
-			if (!tr) {
-				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
-			}
-
-			// fill mission
-			await this.fillMissionInput(page, day);
-
-			await this.handleFillHourInputsStartAndEnd(page, day);
+	protected validateConfigValues(): void {
+		if (this.config.dayModifiersSupport.sickDays) {
+			throw new UnsupportedConfigError('sick days are not currently supported');
 		}
+		if (this.config.dayModifiersSupport.splitDays) {
+			throw new UnsupportedConfigError('split days scraping are not currently supported');
+		}
+		if (this.config.dayModifiersSupport.vacation) {
+			console.log('webtime will fill vacation days');
+		}
+	}
+
+	protected async fillTimesheet(page: Page, days: GroupedDays): Promise<void> {
+		await this.handleDayInputting(page, days[DayType.REGULAR], DayType.REGULAR);
+
+		if (this.config.dayModifiersSupport.vacation && days[DayType.VACATION].length) {
+			await this.handleDayInputting(page, days[DayType.VACATION], DayType.VACATION);
+		}
+
+		if (this.config.dayModifiersSupport.vacation && days[DayType.SICK_DAY].length) {
+			await this.handleDayInputting(page, days[DayType.SICK_DAY], DayType.SICK_DAY);
+		}
+
 		const button = await page.$('#save_btn');
 
 		if (!button) {
@@ -105,15 +112,19 @@ export class WebtimeAutomator extends Automator {
 		return;
 	}
 
-	protected validateConfigValues(): void {
-		if (this.config.dayModifiersSupport.sickDays) {
-			throw new UnsupportedConfigError('sick days are not currently supported');
-		}
-		if (this.config.dayModifiersSupport.splitDays) {
-			throw new UnsupportedConfigError('split days scraping are not currently supported');
-		}
-		if (this.config.dayModifiersSupport.vacation) {
-			console.log('webtime will fill vacation days');
+	private async handleDayInputting(page: Page, days: Day[], type: DayType): Promise<void> {
+		await this.selectAssignmentValue(page, type);
+
+		for (const day of days) {
+			const tr = await page.$(this.getTrannySelector(day));
+			if (!tr) {
+				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
+			}
+
+			// fill mission
+			await this.fillMissionInput(page, day);
+
+			await this.handleFillHourInputsStartAndEnd(page, day);
 		}
 	}
 
