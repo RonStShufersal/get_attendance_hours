@@ -94,6 +94,7 @@ export class WebtimeAutomator extends Automator {
 			await this.handleDayInputting(page, days[DayType.VACATION], DayType.VACATION);
 		}
 
+		// TODO: add sick notes upload to be able to support sick days properly
 		if (this.config.dayModifiersSupport.vacation && days[DayType.SICK_DAY].length) {
 			await this.handleDayInputting(page, days[DayType.SICK_DAY], DayType.SICK_DAY);
 		}
@@ -139,6 +140,7 @@ export class WebtimeAutomator extends Automator {
 
 		const defaultOptions = { page, earlyReturnOnNonEmpty: true };
 
+		// TODO: switch to LoginInputStrategy
 		await fillInputByName({
 			...defaultOptions,
 			inputSelector: start.hour,
@@ -189,6 +191,8 @@ export class WebtimeAutomator extends Automator {
 	}
 
 	private getTrannySelector(day: Day): string {
+		// split days incompatibility
+		// takes row #, instead of looking at day value..
 		return `#tableDyn1 tr[row_no="${getDayFromDayType(day)}"]`;
 	}
 
