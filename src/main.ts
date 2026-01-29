@@ -1,77 +1,33 @@
-import { automateWebtimeHoursEntry } from './automators/webtime';
 import missingEnvironmentError from './errors/MissingEnvironmentError';
-import scrapeError from './errors/ScrapingError';
-import { UnsupportedTargetError } from './errors/UnsupportedError';
-import { HilanScraper } from './scrapers/impl/HilanScraper';
-import { getDaysFromSynerion } from './scrapers/synerion';
-import { Day } from './types/hours';
+import { day2GroupedDays } from './converters/day2GroupedDays';
+import { DefaultScrapingOrchestrator } from './orchestrators/scraping/impl/DefaultScrapingOrchestrator';
+import { DefaultAutomatingOrchestrator } from './orchestrators/automating/impl/DefaultAutomatingOrchestrator';
 
 export async function main() {
 	validateAllEnvVariablesExist();
-	const scrapingTarget = process.env.SCRAPING_TARGET;
-	const automationTarget = process.env.AUTOMATION_TARGET;
-	const scrapingResponse: Day[] = [];
-	switch (scrapingTarget) {
-		case 'synerion':
-			await populateDaysFromSynerion(scrapingResponse);
-			break;
 
-		case 'hilan':
-			await populateDaysFromHilan(scrapingResponse);
-			break;
+	const scraper = new DefaultScrapingOrchestrator();
+	const days = await scraper.orchestrateDayScraping();
 
-		case undefined:
-			console.error('No SCRAPING_TARGET provided, exiting');
-			process.exit(1);
-			break;
+	const grouped = day2GroupedDays(days);
 
-		default:
-			console.error('SCRAPING_TARGET not recognized, exiting');
-			process.exit(1);
-			break;
-	}
-	switch (automationTarget) {
-		case 'webtime':
-			await automateWebtimeHoursEntry(scrapingResponse);
-			break;
-
-		case undefined:
-			console.error('No AUTOMATION_TARGET provided, exiting');
-			process.exit(1);
-			break;
-
-		default:
-			console.error('AUTOMATION_TARGET not recognized, exiting');
-			process.exit(1);
-			break;
-	}
-}
-
-async function populateDaysFromSynerion(days: Day[]) {
-	const response = await getDaysFromSynerion();
-	if (!response?.length) {
-		scrapeError('No days scraped from synerion');
-	}
-	days.push(...response);
-}
-
-async function populateDaysFromHilan(days: Day[]) {
-	const scraper = new HilanScraper();
-	const response = await scraper.getDays();
-	if (!response?.length) {
-		scrapeError('No days scraped from hilan');
-	}
-	days.push(...response);
+	const automator = new DefaultAutomatingOrchestrator();
+	await automator.orchestrateDayAutomation(grouped);
 }
 
 function validateAllEnvVariablesExist() {
-	if (process.env.AUTOMATION_TARGET !== 'webtime') {
-		throw new UnsupportedTargetError('target is not "webtime"');
-	}
-	const username = process.env.SCRAPER_USERNAME;
-	const password = process.env.SCRAPER_PASSWORD;
+	const variables = [
+		{ name: 'AUTOMATION_TARGET', value: process.env.AUTOMATION_TARGET },
+		{ name: 'AUTOMATOR_USERNAME', value: process.env.AUTOMATOR_USERNAME },
+		{ name: 'AUTOMATOR_PASSWORD', value: process.env.AUTOMATOR_PASSWORD },
+		{ name: 'SCRAPING_TARGET', value: process.env.SCRAPING_TARGET },
+		{ name: 'SCRAPER_USERNAME', value: process.env.SCRAPER_USERNAME },
+		{ name: 'SCRAPER_PASSWORD', value: process.env.SCRAPER_PASSWORD },
+	];
 
-	if (!username || !password) {
-		missingEnvironmentError('Missing env variables: SCRAPER_USERNAME or SCRAPER_PASSWORD');
+	for (const variable of variables) {
+		if (!variable.value) {
+			missingEnvironmentError('Missing env variable ' + variable.name);
+		}
 	}
 }

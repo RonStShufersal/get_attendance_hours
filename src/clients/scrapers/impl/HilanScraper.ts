@@ -1,15 +1,16 @@
-import { Day, DayHoursWithDayModifier, DayValue, Hour } from '../../types/hours';
-import { Scraper } from '../Scraper';
-import { getCredentials } from '../../util/getCredentials';
-import { DefaultLoginStrategy } from '../util/impl/DefaultLoginStrategy';
-import { LoginInputStrategy, SelectorLookupStrategy } from '../types/LoginInputStrategy';
-import missingCredentialsError from '../../errors/MissingCredentialsError';
 import { Page } from 'puppeteer';
-import formAutomationError from '../../errors/FormAutomationError';
-import scrapeError, { ScrapingError } from '../../errors/ScrapingError';
-import { unsupportedConfigError, UnsupportedConfigError } from '../../errors/UnsupportedError';
-import { DayModifiers, RawDayRow } from '../types/CommonScrapingTypes';
-import { stringIsHourBase } from '../../util/typeChecks';
+import missingCredentialsError from '../../../errors/MissingCredentialsError';
+import { Day, DayHoursWithDayType, DayValue, Hour } from '../../types/HourDay';
+import { getCredentials } from '../../../util/getCredentials';
+import { Scraper } from '../Scraper';
+import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInputStrategy';
+import { DefaultLoginStrategy } from '../../strategies/login/impl/DefaultLoginStrategy';
+import formAutomationError from '../../../errors/FormAutomationError';
+import scrapeError, { ScrapingError } from '../../../errors/ScrapingError';
+import { UnsupportedConfigError, unsupportedConfigError } from '../../../errors/UnsupportedError';
+import { stringIsHourBase } from '../../../util/typeChecks';
+import { DayType } from '../../types/CommonTypes';
+import { RawDayRowHilan } from '../types/Hilan';
 
 export class HilanScraper extends Scraper {
 	protected readonly INITIAL_URL: string = 'https://shufersal.net.hilan.co.il/login';
@@ -24,9 +25,9 @@ export class HilanScraper extends Scraper {
 
 	async getDays(): Promise<Day[]> {
 		this.validateConfigValues();
-		const page = await super.getPage();
+		const page = await super.page;
 		await this.handleLogin(page);
-		await this.navigateToHoursLog(page);
+		await this.navigateToTimesheet(page);
 		await this.prepareHoursLogPageForScraping(page);
 		const days = await this.scrapeDays(page);
 		console.log({ days });
@@ -67,7 +68,7 @@ export class HilanScraper extends Scraper {
 		await loginStrategy.handleLoginInputs();
 		await page.waitForNetworkIdle();
 	}
-	protected async navigateToHoursLog(page: Page): Promise<void> {
+	protected async navigateToTimesheet(page: Page): Promise<void> {
 		const hoursLogAnchorHref = await page.$eval('[href*=calendarpage]', (el) =>
 			el ? (el as HTMLAnchorElement).href : formAutomationError('couldnt find hoursLogAnchor'),
 		);
@@ -110,16 +111,16 @@ export class HilanScraper extends Scraper {
 			return {
 				dayValue: dayValue as DayValue,
 				hours: resolvedHours.hours,
-				modifier: resolvedHours.modifier,
+				dayType: resolvedHours.dayType,
 			};
 		});
 
 		if (!this.config.dayModifiersSupport.sickDays) {
-			normalizedDays = normalizedDays.filter((day) => day.modifier !== DayModifiers.SICK_DAY);
+			normalizedDays = normalizedDays.filter((day) => day.dayType !== DayType.SICK_DAY);
 		}
 
 		if (!this.config.dayModifiersSupport.vacation) {
-			normalizedDays = normalizedDays.filter((day) => day.modifier !== DayModifiers.VACATION);
+			normalizedDays = normalizedDays.filter((day) => day.dayType !== DayType.VACATION);
 		}
 
 		return normalizedDays;
@@ -137,11 +138,11 @@ export class HilanScraper extends Scraper {
 		}
 	}
 
-	private async extractRawRows(page: Page): Promise<RawDayRow[]> {
+	private async extractRawRows(page: Page): Promise<RawDayRowHilan[]> {
 		const rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry])';
 
 		return page.$$eval(rowSelector, (rows) =>
-			rows.map((row): RawDayRow => {
+			rows.map((row): RawDayRowHilan => {
 				const day = row.children[0]?.textContent
 					?.split(' ')[0]
 					.split('/')
@@ -161,7 +162,7 @@ export class HilanScraper extends Scraper {
 		);
 	}
 
-	private buildDayHashMap(rows: RawDayRow[]): Record<DayValue, DayHoursWithDayModifier[]> {
+	private buildDayHashMap(rows: RawDayRowHilan[]): Record<DayValue, DayHoursWithDayType[]> {
 		return rows.reduce(
 			(dayHashMap, row) => {
 				if (row.day) {
@@ -172,9 +173,9 @@ export class HilanScraper extends Scraper {
 
 					// split days incompatibility
 					const [inHour, outHour] = row.hours;
-					const dayModifier = this.resolveSelectTitle(row.selectElementTitle);
+					const dayType = this.resolveSelectTitle(row.selectElementTitle);
 
-					if ((!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) && dayModifier === null) {
+					if ((!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) && dayType === DayType.REGULAR) {
 						throw new ScrapingError(`Malformed hour for day ${row.day}`);
 					}
 
@@ -182,37 +183,37 @@ export class HilanScraper extends Scraper {
 					dayHashMap[row.day].push({
 						in: inHour,
 						out: outHour,
-						modifier: dayModifier,
+						dayType: dayType,
 					});
 				}
 
 				return dayHashMap;
 			},
-			{} as Record<DayValue, DayHoursWithDayModifier[]>,
+			{} as Record<DayValue, DayHoursWithDayType[]>,
 		);
 	}
 
-	private resolveHoursAndModifiersForDay(hours: DayHoursWithDayModifier[]): Omit<Day, 'dayValue'> {
+	private resolveHoursAndModifiersForDay(hours: DayHoursWithDayType[]): Omit<Day, 'dayValue'> {
 		if (this.config.dayModifiersSupport.splitDays) {
 			unsupportedConfigError('feature not implemented');
 		}
 
 		return {
 			hours: { in: hours[0].in, out: hours[0].out },
-			modifier: hours[0].modifier,
+			dayType: hours[0].dayType,
 		};
 	}
 
-	private resolveSelectTitle(value?: string): DayModifiers | null {
+	private resolveSelectTitle(value?: string): DayType {
 		if (this.normalizeHebrew(value) === this.normalizeHebrew('מחלה')) {
-			return DayModifiers.SICK_DAY;
+			return DayType.SICK_DAY;
 		}
 
 		if (this.normalizeHebrew(value) === this.normalizeHebrew('חופשה')) {
-			return DayModifiers.VACATION;
+			return DayType.VACATION;
 		}
 
-		return null;
+		return DayType.REGULAR;
 	}
 
 	private normalizeHebrew(str?: string): string {
