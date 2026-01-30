@@ -35,9 +35,6 @@ export class WebtimeAutomator extends Automator {
 		await this.handleLogin(page);
 		await this.navigateToTimesheet();
 		await this.fillTimesheet(page, days);
-
-		// dispose of opened page
-		await page.close();
 	}
 
 	protected async handleLogin(page: Page): Promise<void> {
@@ -122,7 +119,6 @@ export class WebtimeAutomator extends Automator {
 				formAutomationError(`couldnt find tr for day ${day.dayValue}`);
 			}
 
-			// fill mission
 			await this.fillMissionInput(page, day);
 
 			await this.handleFillHourInputsStartAndEnd(page, day);
@@ -191,7 +187,7 @@ export class WebtimeAutomator extends Automator {
 	}
 
 	private getTrannySelector(day: Day): string {
-		// split days incompatibility
+		// TODO split days incompatibility, adjust as needed
 		// takes row #, instead of looking at day value..
 		return `#tableDyn1 tr[row_no="${getDayFromDayType(day)}"]`;
 	}
