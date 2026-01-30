@@ -17,7 +17,7 @@ export class WebtimeAutomator extends Automator {
 
 	protected readonly config = {
 		dayModifiersSupport: {
-			vacation: false,
+			vacation: true,
 			sickDays: false,
 			splitDays: false,
 		},
@@ -102,11 +102,12 @@ export class WebtimeAutomator extends Automator {
 			formAutomationError('couldnt find save button');
 		}
 
-		await button.click();
+		// prettier-ignore
+		await Promise.all([
+			page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3000 }),
+			button.click(),
+		]);
 
-		await page.waitForNetworkIdle({ idleTime: 3000 });
-
-		await new Promise((res) => setTimeout(res, 100 * 10 * 1000));
 		return;
 	}
 

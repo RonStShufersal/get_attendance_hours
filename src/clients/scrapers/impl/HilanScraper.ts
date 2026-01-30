@@ -30,7 +30,7 @@ export class HilanScraper extends Scraper {
 		await this.navigateToTimesheet(page);
 		await this.prepareHoursLogPageForScraping(page);
 		const days = await this.scrapeDays(page);
-		console.log({ days });
+		console.log(days);
 
 		return days;
 	}
