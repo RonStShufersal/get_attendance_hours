@@ -102,10 +102,11 @@ export class WebtimeAutomator extends Automator {
 			formAutomationError('couldnt find save button');
 		}
 
-		// prettier-ignore
+		await button.click();
+
 		await Promise.all([
 			page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3000 }),
-			button.click(),
+			page.waitForSelector('#loadingmsg', { visible: false }),
 		]);
 
 		return;
