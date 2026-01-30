@@ -32,9 +32,6 @@ export class HilanScraper extends Scraper {
 		const days = await this.scrapeDays(page);
 		console.log({ days });
 
-		// dispose of opened page
-		await page.close();
-
 		return days;
 	}
 
