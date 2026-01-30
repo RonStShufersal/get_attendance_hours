@@ -1,4 +1,5 @@
-import { automateWebtimeHoursEntry } from '../../../clients/automators/webtime';
+import { Automator } from '../../../clients/automators/Automator';
+import { WebtimeAutomator } from '../../../clients/automators/impl/WebtimeAutomator';
 import { GroupedDays } from '../../../clients/types/CommonTypes';
 import { AutomatingOrchestrator } from '../AutomatingOrchestrator';
 
@@ -8,15 +9,18 @@ export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
 	}
 
 	async orchestrateDayAutomation(days: GroupedDays): Promise<void> {
+		let automator: Automator;
 		const target = this.target;
 		switch (target) {
 			case 'webtime':
-				await automateWebtimeHoursEntry(days);
+				automator = new WebtimeAutomator();
 				break;
 
 			default:
-				console.error('automating target not recognized, exiting');
+				console.error(`automation target ${target} not recognized, exiting`);
 				process.exit(1);
 		}
+
+		await automator.fillDays(days);
 	}
 }

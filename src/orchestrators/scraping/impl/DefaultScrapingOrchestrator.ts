@@ -24,7 +24,7 @@ export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
 				break;
 
 			default:
-				console.error('scraping target not recognized, exiting');
+				console.error(`scraping target ${target} not recognized, exiting`);
 				process.exit(1);
 		}
 

@@ -1,6 +1,11 @@
 import { DayType, GroupedDays } from '../clients/types/CommonTypes';
 import { Day } from '../clients/types/HourDay';
 
+/**
+ * Returns a map of DayType -> Day[]
+ * @param days an array of days
+ * @returns days grouped by type
+ */
 export function day2GroupedDays(days: Day[]): GroupedDays {
 	const record: GroupedDays = {
 		[DayType.REGULAR]: [],
