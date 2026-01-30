@@ -136,7 +136,7 @@ export class HilanScraper extends Scraper {
 	}
 
 	private async extractRawRows(page: Page): Promise<RawDayRowHilan[]> {
-		const rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry])';
+		const rowSelector = 'tr[class]:has(tr td[id*=cellOf_ManualEntry]):has(.regularItemCell)';
 
 		return page.$$eval(rowSelector, (rows) =>
 			rows.map((row): RawDayRowHilan => {
