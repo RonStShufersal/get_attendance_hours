@@ -17,7 +17,7 @@ export class WebtimeAutomator extends Automator {
 
 	protected readonly config = {
 		dayModifiersSupport: {
-			vacation: false,
+			vacation: true,
 			sickDays: false,
 			splitDays: false,
 		},
@@ -104,9 +104,11 @@ export class WebtimeAutomator extends Automator {
 
 		await button.click();
 
-		await page.waitForNetworkIdle({ idleTime: 3000 });
+		await Promise.all([
+			page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3000 }),
+			page.waitForSelector('#loadingmsg', { visible: false }),
+		]);
 
-		await new Promise((res) => setTimeout(res, 100 * 10 * 1000));
 		return;
 	}
 
