@@ -6,12 +6,14 @@ import { DefaultAutomatingOrchestrator } from './orchestrators/automating/impl/D
 export async function main() {
 	validateAllEnvVariablesExist();
 
-	const scraper = new DefaultScrapingOrchestrator();
+	const config = getTimesheetClientsConfig();
+
+	const scraper = new DefaultScrapingOrchestrator(config);
 	const days = await scraper.orchestrateDayScraping();
 
 	const grouped = day2GroupedDays(days);
 
-	const automator = new DefaultAutomatingOrchestrator();
+	const automator = new DefaultAutomatingOrchestrator(config);
 	await automator.orchestrateDayAutomation(grouped);
 }
 
@@ -30,4 +32,14 @@ function validateAllEnvVariablesExist() {
 			missingEnvironmentError('Missing env variable ' + variable.name);
 		}
 	}
+}
+
+function getTimesheetClientsConfig() {
+	return {
+		dayModifiersSupport: {
+			sickDays: false,
+			splitDays: false,
+			vacation: true,
+		},
+	} as const;
 }

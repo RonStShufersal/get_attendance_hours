@@ -11,17 +11,21 @@ import { UnsupportedConfigError, unsupportedConfigError } from '../../../errors/
 import { stringIsHourBase } from '../../../util/typeChecks';
 import { DayType } from '../../types/CommonTypes';
 import { RawDayRowHilan } from '../types/Hilan';
+import { TimeSheetConfig } from '../../types/Config';
 
+export interface HilanScraperConfig extends TimeSheetConfig {
+	dayModifiersSupport: {
+		readonly vacation: boolean;
+		readonly sickDays: boolean;
+		readonly splitDays: false;
+	};
+}
 export class HilanScraper extends Scraper {
 	protected readonly INITIAL_URL: string = 'https://shufersal.net.hilan.co.il/login';
 
-	protected readonly config = {
-		dayModifiersSupport: {
-			vacation: true,
-			sickDays: false,
-			splitDays: false,
-		},
-	};
+	constructor(protected readonly config: HilanScraperConfig) {
+		super();
+	}
 
 	async getDays(): Promise<Day[]> {
 		this.validateConfigValues();

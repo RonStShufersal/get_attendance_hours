@@ -11,23 +11,27 @@ import { DayType, GroupedDays } from '../../types/CommonTypes';
 import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../../../util/deconstructors';
 import { WebtimeDayHours } from '../types/Webtime';
 import { fillInputByName } from '../../../util/fillInput';
+import { TimeSheetConfig } from '../../types/Config';
 
+export interface WebtimeAutomatorConfig extends TimeSheetConfig {
+	dayModifiersSupport: {
+		vacation: boolean;
+		sickDays: false;
+		splitDays: false;
+	};
+}
 export class WebtimeAutomator extends Automator {
 	protected INITIAL_URL = 'https://webtime.taldor.co.il/?msg=login&ret=wt_periodic.adp';
-
-	protected readonly config = {
-		dayModifiersSupport: {
-			vacation: true,
-			sickDays: false,
-			splitDays: false,
-		},
-	};
 
 	private readonly dayType2DescriptorRawValue: Record<DayType, string> = {
 		[DayType.REGULAR]: '2791',
 		[DayType.SICK_DAY]: '513',
 		[DayType.VACATION]: '512',
 	};
+
+	constructor(protected readonly config: WebtimeAutomatorConfig) {
+		super();
+	}
 
 	async fillDays(days: GroupedDays): Promise<void> {
 		this.validateConfigValues();
@@ -102,12 +106,12 @@ export class WebtimeAutomator extends Automator {
 			formAutomationError('couldnt find save button');
 		}
 
-		await button.click();
-
 		await Promise.all([
-			page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3000 }),
-			page.waitForSelector('#loadingmsg', { visible: false }),
+			button.click(),
+			page.waitForSelector('#loadingmsg', { hidden: true, timeout: 5 * 60 * 1000 }),
 		]);
+
+		await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3 * 1000 });
 
 		return;
 	}

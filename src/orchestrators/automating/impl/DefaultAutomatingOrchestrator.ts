@@ -1,10 +1,13 @@
 import { Automator } from '../../../clients/automators/Automator';
-import { WebtimeAutomator } from '../../../clients/automators/impl/WebtimeAutomator';
+import { WebtimeAutomator, WebtimeAutomatorConfig } from '../../../clients/automators/impl/WebtimeAutomator';
 import { GroupedDays } from '../../../clients/types/CommonTypes';
 import { AutomatingOrchestrator } from '../AutomatingOrchestrator';
 
 export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
-	constructor() {
+	// TODO this will be problematic once new targets are added
+	// it enforces webtime's config on other targets
+	// possible solutions include generating a config per all target combinations
+	constructor(private readonly config: WebtimeAutomatorConfig) {
 		super('automator');
 	}
 
@@ -13,7 +16,7 @@ export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
 		const target = this.target;
 		switch (target) {
 			case 'webtime':
-				automator = new WebtimeAutomator();
+				automator = new WebtimeAutomator(this.config);
 				break;
 
 			default:
