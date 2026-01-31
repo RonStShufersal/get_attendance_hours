@@ -11,6 +11,9 @@ import { DayType } from '../types/CommonTypes';
 const URL = 'https://lavieweb.corp.supersol.co.il/synerionweb/#/dailyBrowser';
 const externalNetworkRequestURL = `https://lavieweb.corp.supersol.co.il/SynerionWeb/api/DailyBrowser/Attendance`;
 
+/**
+ * @deprecated since version `1.0.0`. This scraper is no longer maintained, use at your own risk
+ */
 export const getDaysFromSynerion = async (): Promise<Day[]> => {
 	const browser = await connect();
 	const page = await browser.newPage();

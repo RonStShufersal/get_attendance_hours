@@ -1,11 +1,14 @@
-import { HilanScraper } from '../../../clients/scrapers/impl/HilanScraper';
+import { HilanScraper, HilanScraperConfig } from '../../../clients/scrapers/impl/HilanScraper';
 import { getDaysFromSynerion } from '../../../clients/scrapers/synerion';
 import { Day } from '../../../clients/types/HourDay';
 import scrapeError from '../../../errors/ScrapingError';
 import { ScrapingOrchestrator } from '../ScrapingOrchestrator';
 
 export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
-	constructor() {
+	// TODO this will be problematic once new targets are added
+	// it enforces webtime's config on other targets
+	// possible solutions include generating a config per all target combinations
+	constructor(private readonly config: HilanScraperConfig) {
 		super('scraper');
 	}
 
@@ -32,7 +35,7 @@ export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
 	}
 
 	private async scrapeFromHilan(): Promise<Day[]> {
-		const scraper = new HilanScraper();
+		const scraper = new HilanScraper(this.config);
 		const days = await scraper.getDays();
 		if (!days?.length) {
 			scrapeError('No days scraped from hilan');
