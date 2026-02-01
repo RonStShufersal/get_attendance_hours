@@ -1,12 +1,8 @@
-declare namespace NodeJS {
-	export interface ProcessEnv {
-		SCRAPING_TARGET?: 'synerion' | 'hilan';
-		AUTOMATION_TARGET?: 'webtime';
+import { Environment } from './src/env/env.schema';
 
-		AUTOMATOR_USERNAME?: string;
-		AUTOMATOR_PASSWORD?: string;
-
-		SCRAPER_USERNAME?: string;
-		SCRAPER_PASSWORD?: string;
+declare global {
+	declare namespace NodeJS {
+		// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+		export interface ProcessEnv extends Environment {}
 	}
 }
