@@ -1,14 +1,13 @@
-import { Target } from '../types/targets';
+import env, { Environment } from '../env/env.schema';
 
-export function getTarget(type: 'scraper' | 'automator'): Target {
-	switch (type) {
-		case 'scraper':
-			return process.env.SCRAPING_TARGET;
+// helper type for clarity
+type TargetFor<T extends 'scraper' | 'automator'> = T extends 'scraper'
+	? Environment['SCRAPING_TARGET']
+	: Environment['AUTOMATION_TARGET'];
 
-		case 'automator':
-			return process.env.AUTOMATION_TARGET;
-
-		default:
-			return;
+export function getTarget<T extends 'scraper' | 'automator'>(type: T): TargetFor<T> {
+	if (type === 'scraper') {
+		return env.SCRAPING_TARGET as TargetFor<T>;
 	}
+	return env.AUTOMATION_TARGET as TargetFor<T>;
 }
