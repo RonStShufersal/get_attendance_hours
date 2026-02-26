@@ -1,4 +1,7 @@
+import dotenv from 'dotenv';
 import { z } from 'zod';
+
+dotenv.configDotenv();
 
 const minOneChar = () => z.string().min(1);
 
