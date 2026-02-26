@@ -1,6 +1,6 @@
 import { Page } from 'puppeteer';
 import { Automator } from '../Automator';
-import { Day } from '../../types/HourDay';
+import { Day, Hour } from '../../types/HourDay';
 import { UnsupportedConfigError } from '../../../errors/UnsupportedError';
 import { getCredentials } from '../../../util/getCredentials';
 import missingCredentialsError from '../../../errors/MissingCredentialsError';
@@ -92,6 +92,12 @@ export class WebtimeAutomator extends Automator {
 		await this.handleDayInputting(page, days[DayType.REGULAR], DayType.REGULAR);
 
 		if (this.config.dayModifiersSupport.vacation && days[DayType.VACATION].length) {
+			// TODO find a better way to handle empty vacation days
+			// hour destructurers add 'undefined' as the 2nd value which causes page to get stuck
+			for (const vacation of days[DayType.VACATION]) {
+				vacation.hours.in = ':' as unknown as Hour;
+				vacation.hours.out = ':' as unknown as Hour;
+			}
 			await this.handleDayInputting(page, days[DayType.VACATION], DayType.VACATION);
 		}
 
@@ -108,10 +114,8 @@ export class WebtimeAutomator extends Automator {
 
 		await Promise.all([
 			button.click(),
-			page.waitForSelector('#loadingmsg', { hidden: true, timeout: 5 * 60 * 1000 }),
+			await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 1000 * 60 * 5 }),
 		]);
-
-		await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 3 * 1000 });
 
 		return;
 	}
