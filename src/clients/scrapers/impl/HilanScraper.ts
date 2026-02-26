@@ -12,6 +12,7 @@ import { stringIsHourBase } from '../../../util/typeChecks';
 import { DayType } from '../../types/CommonTypes';
 import { RawDayRowHilan } from '../types/Hilan';
 import { TimeSheetConfig } from '../../types/Config';
+import env from '../../../env/env.schema';
 
 export interface HilanScraperConfig extends TimeSheetConfig {
 	dayModifiersSupport: {
@@ -164,6 +165,7 @@ export class HilanScraper extends Scraper {
 	}
 
 	private buildDayHashMap(rows: RawDayRowHilan[]): Record<DayValue, DayHoursWithDayType[]> {
+		const shouldThrowOnMalformed = Boolean(env.THROW_ON_MALFORMED_DAYS);
 		return rows.reduce(
 			(dayHashMap, row) => {
 				if (row.day) {
@@ -177,7 +179,11 @@ export class HilanScraper extends Scraper {
 					const dayType = this.resolveSelectTitle(row.selectElementTitle);
 
 					if ((!stringIsHourBase(inHour) || !stringIsHourBase(outHour)) && dayType === DayType.REGULAR) {
-						throw new ScrapingError(`Malformed hour for day ${row.day}`);
+						if (shouldThrowOnMalformed) {
+							throw new ScrapingError(`Malformed hour for day ${row.day}`);
+						} else {
+							return dayHashMap;
+						}
 					}
 
 					dayHashMap[row.day] ??= [];

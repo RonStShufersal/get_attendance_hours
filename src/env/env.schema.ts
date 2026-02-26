@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { z } from 'zod';
+import { boolean, z } from 'zod';
 
 dotenv.configDotenv();
 
@@ -19,6 +19,7 @@ const envSchema = z.object({
 	AUTOMATOR_PASSWORD: minOneChar(),
 	SCRAPER_USERNAME: minOneChar(),
 	SCRAPER_PASSWORD: minOneChar(),
+	THROW_ON_MALFORMED_DAYS: boolean().optional(),
 });
 
 const env = envSchema.parse(process.env);
