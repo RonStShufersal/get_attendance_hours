@@ -15,3 +15,8 @@ export function getHourFromHours(hourValue: Hour): ValidHour {
 export function getMinutesFromHours(hourValue: Hour): ValidMinute {
 	return hourValue.split(':')[1] as ValidMinute;
 }
+
+export function getSafeHourAndMinute(hourValue: Hour): [string, string] {
+	const [hour = '', minute = ''] = [getHourFromHours(hourValue), getMinutesFromHours(hourValue)];
+	return [hour, minute];
+}

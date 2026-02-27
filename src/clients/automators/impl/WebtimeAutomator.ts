@@ -1,6 +1,6 @@
 import { Page } from 'puppeteer';
 import { Automator } from '../Automator';
-import { Day, Hour } from '../../types/HourDay';
+import { Day } from '../../types/HourDay';
 import { UnsupportedConfigError } from '../../../errors/UnsupportedError';
 import { getCredentials } from '../../../util/getCredentials';
 import missingCredentialsError from '../../../errors/MissingCredentialsError';
@@ -8,7 +8,7 @@ import { LoginInputStrategy, SelectorLookupStrategy } from '../../types/LoginInp
 import { DefaultLoginStrategy } from '../../strategies/login/impl/DefaultLoginStrategy';
 import formAutomationError from '../../../errors/FormAutomationError';
 import { DayType, GroupedDays } from '../../types/CommonTypes';
-import { getDayFromDayType, getHourFromHours, getMinutesFromHours } from '../../../util/deconstructors';
+import { getDayFromDayType, getSafeHourAndMinute } from '../../../util/deconstructors';
 import { WebtimeDayHours } from '../types/Webtime';
 import { fillInputByName } from '../../../util/fillInput';
 import { TimeSheetConfig } from '../../types/Config';
@@ -92,12 +92,6 @@ export class WebtimeAutomator extends Automator {
 		await this.handleDayInputting(page, days[DayType.REGULAR], DayType.REGULAR);
 
 		if (this.config.dayModifiersSupport.vacation && days[DayType.VACATION].length) {
-			// TODO find a better way to handle empty vacation days
-			// hour destructurers add 'undefined' as the 2nd value which causes page to get stuck
-			for (const vacation of days[DayType.VACATION]) {
-				vacation.hours.in = ':' as unknown as Hour;
-				vacation.hours.out = ':' as unknown as Hour;
-			}
 			await this.handleDayInputting(page, days[DayType.VACATION], DayType.VACATION);
 		}
 
@@ -138,11 +132,8 @@ export class WebtimeAutomator extends Automator {
 	private async handleFillHourInputsStartAndEnd(page: Page, day: Day) {
 		const { start, end } = this.getHoursSelectors(day);
 
-		const hourIn = String(getHourFromHours(day.hours.in));
-		const minuteIn = String(getMinutesFromHours(day.hours.in));
-
-		const hourOut = String(getHourFromHours(day.hours.out));
-		const minuteOut = String(getMinutesFromHours(day.hours.out));
+		const [hourIn, minuteIn] = getSafeHourAndMinute(day.hours.in);
+		const [hourOut, minuteOut] = getSafeHourAndMinute(day.hours.out);
 
 		const defaultOptions = { page, earlyReturnOnNonEmpty: true };
 
