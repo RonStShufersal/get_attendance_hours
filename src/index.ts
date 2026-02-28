@@ -1,11 +1,10 @@
-import { main } from './main';
+import env from './env/env.schema';
+import express, { json } from 'express';
+import apiRoutes from './api';
 
-main()
-	.then(() => {
-		console.log('All tasks completed successfully.');
-		process.exit(0);
-	})
-	.catch((error) => {
-		console.error(error);
-		process.exit(1);
-	});
+const app = express();
+app
+	.use(json())
+	.use('/api', apiRoutes)
+	.get('/health', (_, res) => res.send('ok'))
+	.listen(env.PORT, () => console.log(`listening on ${env.PORT}`));
