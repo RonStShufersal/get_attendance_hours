@@ -2,6 +2,7 @@ import { HilanScraper, HilanScraperConfig } from '../../../clients/scrapers/impl
 import { getDaysFromSynerion } from '../../../clients/scrapers/synerion';
 import { Day } from '../../../clients/types/HourDay';
 import scrapeError from '../../../errors/ScrapingError';
+import { unsupportedTargetError } from '../../../errors/UnsupportedError';
 import { ScrapingOrchestrator } from '../ScrapingOrchestrator';
 
 export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
@@ -27,8 +28,8 @@ export class DefaultScrapingOrchestrator extends ScrapingOrchestrator {
 				break;
 
 			default:
-				console.error(`scraping target ${target} not recognized, exiting`);
-				process.exit(1);
+				console.error(`scraping target ${target} not recognized`);
+				unsupportedTargetError();
 		}
 
 		return days;
