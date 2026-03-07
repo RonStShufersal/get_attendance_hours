@@ -11,8 +11,7 @@ router.post('/scrape', async (req, res) => {
 	}
 
 	try {
-		// const insertedDays = await startScraping(payload.data);
-		const insertedDays = [{ hello: 'world' }];
+		const insertedDays = await startScraping(payload.data);
 		return res.send({ insertedDays });
 	} catch (error) {
 		console.error(error);

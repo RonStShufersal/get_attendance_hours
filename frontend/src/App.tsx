@@ -13,7 +13,7 @@ import {
 	theme,
 } from 'antd';
 import heIL from 'antd/locale/he_IL';
-import { automatorOptions, modifierSupport, scraperOptions } from './constants';
+import { modifierSupport } from './constants';
 import { ThemeModeMenu } from './components/ThemeModeMenu';
 import { AutomatorStep } from './components/steps/AutomatorStep';
 import { ModifiersStep } from './components/steps/ModifiersStep';
@@ -77,7 +77,7 @@ export default function App() {
 					return;
 				}
 				if (!insertedDays) {
-					form.submit();
+					void submitForm();
 				}
 			}
 		};
@@ -102,8 +102,15 @@ export default function App() {
 		setCurrentStep(0);
 	};
 
-	const handleSubmit = async (values: FormValues) => {
+	const submitForm = async () => {
 		if (currentStep !== 2) {
+			return;
+		}
+
+		let values: FormValues;
+		try {
+			values = await form.validateFields();
+		} catch {
 			return;
 		}
 
@@ -168,12 +175,6 @@ export default function App() {
 					<Form<FormValues>
 						form={form}
 						layout="vertical"
-						onFinish={handleSubmit}
-						onKeyDown={(event) => {
-							if (event.key === 'Enter' && !event.ctrlKey && currentStep < 2) {
-								event.preventDefault();
-							}
-						}}
 						initialValues={{
 							SCRAPING_TARGET: 'hilan',
 							AUTOMATION_TARGET: 'webtime',
@@ -209,17 +210,23 @@ export default function App() {
 										</div>
 										<Space className="step-actions">
 											<Button
+												htmlType="button"
 												onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
 												disabled={currentStep === 0}
 											>
 												חזרה
 											</Button>
 											{currentStep < 2 ? (
-												<Button type="primary" onClick={() => void handleNextStep()}>
+												<Button type="primary" htmlType="button" onClick={() => void handleNextStep()}>
 													הבא
 												</Button>
 											) : (
-												<Button type="primary" htmlType="submit" loading={submitting}>
+												<Button
+													type="primary"
+													htmlType="button"
+													onClick={() => void submitForm()}
+													loading={submitting}
+												>
 													שליחה
 												</Button>
 											)}
