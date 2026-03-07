@@ -37,15 +37,13 @@
 	"author": "RonStrauss",
 	"module": "dist/index.mjs",
 	"devDependencies": {
-		"@changesets/cli": "^2.28.1",
 		"@eslint/js": "^9.24.0",
+		"@types/express": "^5.0.6",
 		"@types/node": "^22.19.7",
 		"@vitest/browser": "^3.1.1",
 		"cross-env": "^7.0.3",
 		"eslint": "^9.24.0",
-		"globals": "^16.0.0",
 		"husky": "^9.1.7",
-		"playwright": "^1.51.1",
 		"prettier": "^3.5.3",
 		"ts-node": "^10.9.2",
 		"tsup": "^8.4.0",
@@ -56,6 +54,7 @@
 	},
 	"dependencies": {
 		"dotenv": "^16.4.7",
+		"express": "^5.2.1",
 		"puppeteer": "^24.6.0"
 	}
 }

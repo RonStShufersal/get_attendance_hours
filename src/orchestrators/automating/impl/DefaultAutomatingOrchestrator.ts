@@ -1,6 +1,7 @@
 import { Automator } from '../../../clients/automators/Automator';
 import { WebtimeAutomator, WebtimeAutomatorConfig } from '../../../clients/automators/impl/WebtimeAutomator';
 import { GroupedDays } from '../../../clients/types/CommonTypes';
+import { unsupportedTargetError } from '../../../errors/UnsupportedError';
 import { AutomatingOrchestrator } from '../AutomatingOrchestrator';
 
 export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
@@ -20,8 +21,8 @@ export class DefaultAutomatingOrchestrator extends AutomatingOrchestrator {
 				break;
 
 			default:
-				console.error(`automation target ${target} not recognized, exiting`);
-				process.exit(1);
+				console.error(`automation target ${target} not recognized`);
+				unsupportedTargetError();
 		}
 
 		await automator.fillDays(days);

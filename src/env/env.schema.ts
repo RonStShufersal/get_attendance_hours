@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
-import { boolean, z } from 'zod';
+import { boolean, number, z } from 'zod';
 
 dotenv.configDotenv();
 
 const minOneChar = () => z.string().min(1);
 
-const envSchema = z.object({
+export const envSchema = z.object({
 	//prettier-ignore
 	SCRAPING_TARGET: z.union([
 		z.literal('synerion'),
@@ -20,6 +20,7 @@ const envSchema = z.object({
 	SCRAPER_USERNAME: minOneChar(),
 	SCRAPER_PASSWORD: minOneChar(),
 	THROW_ON_MALFORMED_DAYS: boolean().optional(),
+	PORT: number().default(3000),
 });
 
 const env = envSchema.parse(process.env);
