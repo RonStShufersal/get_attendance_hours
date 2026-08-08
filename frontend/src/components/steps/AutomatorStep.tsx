@@ -20,14 +20,20 @@ export function AutomatorStep({ options }: Props) {
 				name="AUTOMATOR_USERNAME"
 				rules={[{ required: true, message: 'הכנס שם משתמש' }]}
 			>
-				<Input autoComplete="username" />
+				<Input
+					name="automator-username"
+					autoComplete="username"
+					autoCapitalize="none"
+					autoCorrect="off"
+					spellCheck={false}
+				/>
 			</Form.Item>
 			<Form.Item<FormValues>
 				label="סיסמה"
 				name="AUTOMATOR_PASSWORD"
 				rules={[{ required: true, message: 'הכנס סיסמה' }]}
 			>
-				<Input.Password autoComplete="current-password" />
+				<Input.Password name="automator-password" autoComplete="current-password" />
 			</Form.Item>
 		</>
 	);

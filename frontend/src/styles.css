@@ -57,6 +57,6 @@ body,
   justify-content: space-between;
 }
 
-.step-pane.hidden {
-  display: none;
+.step-form {
+  width: 100%;
 }

@@ -20,14 +20,20 @@ export function ScraperStep({ options }: Props) {
 				name="SCRAPER_USERNAME"
 				rules={[{ required: true, message: 'הכנס שם משתמש' }]}
 			>
-				<Input autoComplete="username" />
+				<Input
+					name="scraper-username"
+					autoComplete="username"
+					autoCapitalize="none"
+					autoCorrect="off"
+					spellCheck={false}
+				/>
 			</Form.Item>
 			<Form.Item<FormValues>
 				label="סיסמה"
 				name="SCRAPER_PASSWORD"
 				rules={[{ required: true, message: 'הכנס סיסמה' }]}
 			>
-				<Input.Password autoComplete="current-password" />
+				<Input.Password name="scraper-password" autoComplete="current-password" />
 			</Form.Item>
 		</>
 	);
