@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import {
 	Button,
@@ -51,6 +51,11 @@ const appConfigSchema = z.object({
 
 const { Title } = Typography;
 const themeStorageKey = 'attendance_theme_mode';
+const fieldsByStep: (keyof FormValues)[][] = [
+	['SCRAPING_TARGET', 'SCRAPER_USERNAME', 'SCRAPER_PASSWORD'],
+	['AUTOMATION_TARGET', 'AUTOMATOR_USERNAME', 'AUTOMATOR_PASSWORD'],
+	['DAY_MODIFIERS'],
+];
 
 const getInitialThemeMode = (): ThemeMode => {
 	const stored = localStorage.getItem(themeStorageKey);
@@ -61,6 +66,33 @@ const getInitialThemeMode = (): ThemeMode => {
 };
 
 const getSystemDarkPreference = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+function WizardActions({
+	currentStep,
+	submitting,
+	onBack,
+}: {
+	currentStep: number;
+	submitting: boolean;
+	onBack: () => void;
+}) {
+	return (
+		<Space className="step-actions">
+			<Button htmlType="button" onClick={onBack} disabled={currentStep === 0}>
+				חזרה
+			</Button>
+			{currentStep < 2 ? (
+				<Button type="primary" htmlType="submit">
+					הבא
+				</Button>
+			) : (
+				<Button type="primary" htmlType="submit" loading={submitting}>
+					שליחה
+				</Button>
+			)}
+		</Space>
+	);
+}
 
 export default function App() {
 	const [form] = Form.useForm<FormValues>();
@@ -163,12 +195,6 @@ export default function App() {
 	}, [form, currentStep, insertedDays]);
 
 	const handleNextStep = async () => {
-		const fieldsByStep: (keyof FormValues)[][] = [
-			['SCRAPING_TARGET', 'SCRAPER_USERNAME', 'SCRAPER_PASSWORD'],
-			['AUTOMATION_TARGET', 'AUTOMATOR_USERNAME', 'AUTOMATOR_PASSWORD'],
-			['DAY_MODIFIERS'],
-		];
-
 		await form.validateFields(fieldsByStep[currentStep]);
 		setCurrentStep((prev) => Math.min(prev + 1, 2));
 	};
@@ -183,12 +209,13 @@ export default function App() {
 			return;
 		}
 
-		let values: FormValues;
 		try {
-			values = await form.validateFields();
+			await form.validateFields(fieldsByStep[2]);
 		} catch {
 			return;
 		}
+
+		const values = form.getFieldsValue(true) as FormValues;
 
 		setSubmitting(true);
 		setInsertedDays(null);
@@ -224,6 +251,19 @@ export default function App() {
 		}
 	};
 
+	const submitWizard = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		try {
+			if (currentStep < 2) {
+				await handleNextStep();
+				return;
+			}
+			await submitForm();
+		} catch {
+			// Field errors are already shown by antd.
+		}
+	};
+
 	const stepItems = [
 		{
 			title: 'חילוץ',
@@ -250,6 +290,7 @@ export default function App() {
 
 					<Form<FormValues>
 						form={form}
+						component={false}
 						layout="vertical"
 						initialValues={appConfig?.defaults}
 						requiredMark={false}
@@ -283,38 +324,51 @@ export default function App() {
 									/>
 								) : (
 									<Spin spinning={submitting && currentStep === 2}>
-										<div className={currentStep === 0 ? 'step-pane' : 'step-pane hidden'}>
-											<ScraperStep options={appConfig.scrapingTargets} />
-										</div>
-										<div className={currentStep === 1 ? 'step-pane' : 'step-pane hidden'}>
-											<AutomatorStep options={appConfig.automationTargets} />
-										</div>
-										<div className={currentStep === 2 ? 'step-pane' : 'step-pane hidden'}>
-											<ModifiersStep modifiers={appConfig.dayModifiers} />
-										</div>
-										<Space className="step-actions">
-											<Button
-												htmlType="button"
-												onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
-												disabled={currentStep === 0}
+										{currentStep === 0 && (
+											<form
+												name="scraper-login"
+												autoComplete="on"
+												className="step-form"
+												onSubmit={(event) => void submitWizard(event)}
 											>
-												חזרה
-											</Button>
-											{currentStep < 2 ? (
-												<Button type="primary" htmlType="button" onClick={() => void handleNextStep()}>
-													הבא
-												</Button>
-											) : (
-												<Button
-													type="primary"
-													htmlType="button"
-													onClick={() => void submitForm()}
-													loading={submitting}
-												>
-													שליחה
-												</Button>
-											)}
-										</Space>
+												<ScraperStep options={appConfig.scrapingTargets} />
+												<WizardActions
+													currentStep={currentStep}
+													submitting={submitting}
+													onBack={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
+												/>
+											</form>
+										)}
+										{currentStep === 1 && (
+											<form
+												name="automator-login"
+												autoComplete="on"
+												className="step-form"
+												onSubmit={(event) => void submitWizard(event)}
+											>
+												<AutomatorStep options={appConfig.automationTargets} />
+												<WizardActions
+													currentStep={currentStep}
+													submitting={submitting}
+													onBack={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
+												/>
+											</form>
+										)}
+										{currentStep === 2 && (
+											<form
+												name="day-modifiers"
+												autoComplete="off"
+												className="step-form"
+												onSubmit={(event) => void submitWizard(event)}
+											>
+												<ModifiersStep modifiers={appConfig.dayModifiers} />
+												<WizardActions
+													currentStep={currentStep}
+													submitting={submitting}
+													onBack={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
+												/>
+											</form>
+										)}
 									</Spin>
 								)}
 							</Card>
